@@ -432,3 +432,123 @@ def registrar_acesso(user_id: int, tipo_acesso: str = 'login'):
     finally:
         cursor.close()
         conn.close()
+
+def criar_tabela_acessos():
+    """Criar tabela para registrar acessos dos usuários"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_acessos (
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL,
+                data_acesso TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                tipo_acesso TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES usuarios (user_id)
+            )
+        ''')
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+def criar_todas_tabelas():
+    """Cria todas as tabelas necessárias"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Tabela de acessos
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_acessos (
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL,
+                data_acesso TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                tipo_acesso TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES usuarios (user_id)
+            )
+        ''')
+        
+        # Tabela de ações
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS acoes_usuarios (
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL,
+                tipo_acao TEXT NOT NULL,
+                data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES usuarios (user_id)
+            )
+        ''')
+        
+        # Tabela de contadores
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS contadores_permanentes (
+                id SERIAL PRIMARY KEY,
+                tipo TEXT NOT NULL UNIQUE,
+                total INTEGER DEFAULT 0,
+                ultima_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Inicializar contadores se não existirem
+        tipos = ['documentos', 'lembretes', 'contatos', 'usuarios']
+        for tipo in tipos:
+            cursor.execute('''
+                INSERT INTO contadores_permanentes (tipo, total)
+                VALUES (%s, 0)
+                ON CONFLICT (tipo) DO NOTHING
+            ''', (tipo,))
+        
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+def listar_usuarios() -> list:
+    """Lista todos os usuários"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            SELECT user_id, nome, username, nivel, data_cadastro 
+            FROM usuarios 
+            ORDER BY nivel, nome
+        ''')
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+def obter_id_dpc() -> int:
+    """Obtém o ID do usuário DPC"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('SELECT user_id FROM usuarios WHERE nivel = %s', ('dpc',))
+        result = cursor.fetchone()
+        return result[0] if result else None
+    finally:
+        cursor.close()
+        conn.close()
+
+def atualizar_nome_admin(admin_id: int) -> bool:
+    """Atualiza o nome do admin"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            UPDATE usuarios 
+            SET nome = 'Diego', username = 'Diego'
+            WHERE user_id = %s AND nivel = 'admin'
+            RETURNING user_id
+        ''', (admin_id,))
+        result = cursor.fetchone()
+        conn.commit()
+        return bool(result)
+    except Exception as e:
+        print(f"Erro ao atualizar nome do admin: {e}")
+        return False
+    finally:
+        cursor.close()
+        conn.close()
