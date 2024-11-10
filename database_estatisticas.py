@@ -58,7 +58,38 @@ def criar_tabela_estatisticas():
         print(f"Erro ao criar tabelas de estatísticas: {e}")
         raise e
     finally:
+        cursor.close()
         conn.close()
+
+def incrementar_contador(tipo: str, quantidade: int = 1):
+    max_attempts = 3
+    attempt = 0
+    while attempt < max_attempts:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+            UPDATE contadores_permanentes 
+            SET total = total + %s, 
+                ultima_atualizacao = CURRENT_TIMESTAMP 
+            WHERE tipo = %s
+            RETURNING id
+            ''', (quantidade, tipo))
+            result = cursor.fetchone()
+            conn.commit()
+            return bool(result)
+        except Exception as e:
+            attempt += 1
+            if attempt == max_attempts:
+                print(f"Erro ao incrementar contador após {max_attempts} tentativas: {e}")
+                return False
+            time.sleep(1)
+        finally:
+            try:
+                cursor.close()
+                conn.close()
+            except:
+                pass
 
 def registrar_acao_usuario(user_id: int, tipo_acao: str):
     max_attempts = 3
@@ -80,11 +111,13 @@ def registrar_acao_usuario(user_id: int, tipo_acao: str):
             cursor.execute('''
             INSERT INTO acoes_usuarios (user_id, tipo_acao)
             VALUES (%s, %s)
+            RETURNING id
             ''', (user_id, tipo_acao))
             
+            result = cursor.fetchone()
             conn.commit()
-            return True
-        except sqlite3.OperationalError as e:
+            return bool(result)
+        except Exception as e:
             attempt += 1
             if attempt == max_attempts:
                 print(f"Erro ao registrar ação após {max_attempts} tentativas: {e}")
@@ -96,3 +129,14 @@ def registrar_acao_usuario(user_id: int, tipo_acao: str):
                 conn.close()
             except:
                 pass
+
+def obter_estatisticas():
+    """Obtém estatísticas gerais do sistema"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('SELECT tipo, total FROM contadores_permanentes')
+        return dict(cursor.fetchall())
+    finally:
+        cursor.close()
+        conn.close()
