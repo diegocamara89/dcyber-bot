@@ -67,13 +67,14 @@ def verificar_usuario_ativo(user_id: int) -> bool:
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute('SELECT ativo, nivel FROM usuarios WHERE user_id = ?', (user_id,))
+        cursor.execute('SELECT ativo, nivel FROM usuarios WHERE user_id = %s', (user_id,))
         result = cursor.fetchone()
         is_active = result[0] if result else False
         nivel = result[1] if result else None
         print(f"Verificação de usuário - ID: {user_id}, Ativo: {is_active}, Nível: {nivel}")
         return is_active
     finally:
+        cursor.close()
         conn.close()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -376,7 +377,7 @@ def main():
     criar_tabela_lembretes()
     criar_tabela_acessos()
     criar_todas_tabelas()
-    criar_tabela_estatisticas()  # Adicione esta linha
+    criar_tabela_estatisticas()
     
     # Criar tabelas específicas
     conn = get_db_connection()
@@ -385,8 +386,8 @@ def main():
         # Tabela de acessos
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS user_acessos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL,
                 data_acesso TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 tipo_acesso TEXT NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES usuarios (user_id)
@@ -396,8 +397,8 @@ def main():
         # Tabela de ações
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS acoes_usuarios (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL,
                 tipo_acao TEXT NOT NULL,
                 data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES usuarios (user_id)
@@ -406,9 +407,9 @@ def main():
         
         conn.commit()
     finally:
+        cursor.close()
         conn.close()
     
-                  
     application = Application.builder().token(TOKEN).build()
     
     job_queue = application.job_queue
