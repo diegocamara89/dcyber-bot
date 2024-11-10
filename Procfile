@@ -1,0 +1,1 @@
+worker: python dcyber-bot.py
