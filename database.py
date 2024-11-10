@@ -633,3 +633,65 @@ def alterar_nivel_usuario(user_id: int, novo_nivel: str) -> bool:
     finally:
         cursor.close()
         conn.close()
+
+def listar_usuarios_pendentes() -> list:
+    """Lista usuários com status pendente"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            SELECT 
+                user_id, 
+                nome, 
+                username, 
+                nivel, 
+                data_cadastro 
+            FROM usuarios 
+            WHERE nivel = 'pendente'
+            ORDER BY data_cadastro
+        ''')
+        usuarios = cursor.fetchall()
+        return [
+            {
+                'user_id': u[0],
+                'nome': u[1],
+                'username': u[2],
+                'nivel': u[3],
+                'data_cadastro': u[4]
+            }
+            for u in usuarios
+        ]
+    finally:
+        cursor.close()
+        conn.close()
+
+def listar_usuarios_ativos() -> list:
+    """Lista usuários ativos"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            SELECT 
+                user_id, 
+                nome, 
+                username, 
+                nivel, 
+                data_cadastro 
+            FROM usuarios 
+            WHERE ativo = TRUE
+            ORDER BY nivel, nome
+        ''')
+        usuarios = cursor.fetchall()
+        return [
+            {
+                'user_id': u[0],
+                'nome': u[1],
+                'username': u[2],
+                'nivel': u[3],
+                'data_cadastro': u[4]
+            }
+            for u in usuarios
+        ]
+    finally:
+        cursor.close()
+        conn.close()
