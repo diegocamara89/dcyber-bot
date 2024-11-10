@@ -1,19 +1,13 @@
-# database_estatisticas.py
-import sqlite3
+import psycopg2
 from datetime import datetime
 import time
+import os
 
 def get_db_connection():
-    max_attempts = 3
-    attempt = 0
-    while attempt < max_attempts:
-        try:
-            conn = sqlite3.connect('dcyber_stats.db', timeout=20)
-            return conn
-        except sqlite3.OperationalError:
-            attempt += 1
-            time.sleep(1)
-    raise Exception("Não foi possível conectar ao banco de dados após várias tentativas")
+    DATABASE_URL = os.getenv('DATABASE_URL')
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    return psycopg2.connect(DATABASE_URL)
 
 def criar_tabela_estatisticas():
     conn = get_db_connection()
@@ -54,8 +48,9 @@ def criar_tabela_estatisticas():
         tipos = ['documentos', 'lembretes', 'contatos', 'usuarios', 'casos']
         for tipo in tipos:
             cursor.execute('''
-            INSERT OR IGNORE INTO contadores_permanentes (tipo, total)
+            INSERT INTO contadores_permanentes (tipo, total)
             VALUES (%s, 0)
+            ON CONFLICT (tipo) DO NOTHING
             ''', (tipo,))
         
         conn.commit()
@@ -64,33 +59,6 @@ def criar_tabela_estatisticas():
         raise e
     finally:
         conn.close()
-
-def incrementar_contador(tipo: str, quantidade: int = 1):
-    max_attempts = 3
-    attempt = 0
-    while attempt < max_attempts:
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute('''
-            UPDATE contadores_permanentes 
-            SET total = total + %s, ultima_atualizacao = CURRENT_TIMESTAMP 
-            WHERE tipo = %s
-            ''', (quantidade, tipo))
-            conn.commit()
-            return True
-        except sqlite3.OperationalError as e:
-            attempt += 1
-            if attempt == max_attempts:
-                print(f"Erro ao incrementar contador após {max_attempts} tentativas: {e}")
-                return False
-            time.sleep(1)
-        finally:
-            try:
-                cursor.close()
-                conn.close()
-            except:
-                pass
 
 def registrar_acao_usuario(user_id: int, tipo_acao: str):
     max_attempts = 3
