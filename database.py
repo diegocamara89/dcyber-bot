@@ -374,21 +374,23 @@ def obter_relatorio_atividades(data_inicio, data_fim):
     try:
         print(f"Consultando período: {data_inicio} até {data_fim}")
         
+        # Configurar timezone
+        cursor.execute("SET TIME ZONE 'America/Sao_Paulo'")
+        
         cursor.execute('''
             SELECT 
                 COALESCE(u.nome, u.username) as nome_usuario,
                 u.nivel,
-                DATE(a.data_acesso) as data,
-                MIN(a.data_acesso) as primeiro_acesso,
-                MAX(a.data_acesso) as ultimo_acesso,
+                DATE(a.data_acesso AT TIME ZONE 'America/Sao_Paulo') as data,
+                MIN(a.data_acesso AT TIME ZONE 'America/Sao_Paulo') as primeiro_acesso,
+                MAX(a.data_acesso AT TIME ZONE 'America/Sao_Paulo') as ultimo_acesso,
                 COUNT(*) as total_acessos
             FROM user_acessos a
             JOIN usuarios u ON a.user_id = u.user_id
             WHERE a.data_acesso BETWEEN %s AND %s
-            GROUP BY u.nome, u.username, u.nivel, DATE(a.data_acesso)
-            ORDER BY DATE(a.data_acesso) DESC, nome_usuario
-        ''', (data_inicio.strftime('%Y-%m-%d %H:%M:%S'), 
-              data_fim.strftime('%Y-%m-%d %H:%M:%S')))
+            GROUP BY u.nome, u.username, u.nivel, DATE(a.data_acesso AT TIME ZONE 'America/Sao_Paulo')
+            ORDER BY DATE(a.data_acesso AT TIME ZONE 'America/Sao_Paulo') DESC, nome_usuario
+        ''', (data_inicio, data_fim))
         
         acessos = cursor.fetchall()
         print(f"Acessos encontrados: {len(acessos)}")
@@ -396,15 +398,14 @@ def obter_relatorio_atividades(data_inicio, data_fim):
         cursor.execute('''
             SELECT 
                 COALESCE(u.nome, u.username) as nome_usuario,
-                DATE(a.data_criacao) as data,
+                DATE(a.data_criacao AT TIME ZONE 'America/Sao_Paulo') as data,
                 COUNT(*) as total_assinaturas
             FROM assinaturas a
             JOIN usuarios u ON a.user_id = u.user_id
             WHERE a.data_criacao BETWEEN %s AND %s
-            GROUP BY u.nome, u.username, DATE(a.data_criacao)
-            ORDER BY DATE(a.data_criacao) DESC, nome_usuario
-        ''', (data_inicio.strftime('%Y-%m-%d %H:%M:%S'), 
-              data_fim.strftime('%Y-%m-%d %H:%M:%S')))
+            GROUP BY u.nome, u.username, DATE(a.data_criacao AT TIME ZONE 'America/Sao_Paulo')
+            ORDER BY DATE(a.data_criacao AT TIME ZONE 'America/Sao_Paulo') DESC, nome_usuario
+        ''', (data_inicio, data_fim))
         
         assinaturas = cursor.fetchall()
         print(f"Assinaturas encontradas: {len(assinaturas)}")
