@@ -98,6 +98,29 @@ async def gerenciar_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE)
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     try:
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(
+                text=texto,
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
+        else:
+            await update.message.reply_text(
+                text=texto,
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
+    except BadRequest as e:
+        if "Message is not modified" not in str(e):
+            print(f"Erro ao gerenciar usuários: {str(e)}")
+    except Exception as e:
+        print(f"Erro ao gerenciar usuários: {str(e)}")
+    
+    # Adiciona botões de navegação
+    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data='admin_usuarios')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    try:
         await update.callback_query.edit_message_text(
             text=texto,
             reply_markup=reply_markup,
@@ -671,52 +694,3 @@ async def gerar_relatorio(update: Update, context: ContextTypes.DEFAULT_TYPE, in
     except Exception as e:
         print(f"Erro ao gerar relatório: {e}")
         await update.callback_query.answer("❌ Erro ao gerar relatório")
-
-async def gerenciar_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Menu completo de gerenciamento de usuários"""
-    print("Início de gerenciar_usuarios")
-    usuarios = listar_usuarios()
-    texto = "👥 *Usuários do Sistema:*\n\n"
-    
-    for user in usuarios:
-        user_id, nome, username, nivel, ativo = user
-        nivel_emoji = {
-            'admin': '👑',
-            'dpc': '🔰',
-            'user': '👤',
-            'pendente': '⏳'
-        }.get(nivel, '❓')
-        
-        status_emoji = '✅' if ativo else '❌'
-        
-        texto += f"{nivel_emoji} *{nome}*\n"
-        texto += f"├ ID: `{user_id}`\n"
-        texto += f"├ Username: @{username if username else 'Não informado'}\n"
-        texto += f"├ Nível: {nivel}\n"
-        texto += f"└ Status: {status_emoji} {'Ativo' if ativo else 'Inativo'}\n\n"
-    
-    keyboard = [
-        [InlineKeyboardButton("✅ Gerenciar Aprovações", callback_data='admin_aprovar_usuarios')],
-        [InlineKeyboardButton("🔰 Definir DPC", callback_data='definir_dpc')],
-        [InlineKeyboardButton("🔙 Menu Admin", callback_data='menu_admin')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    try:
-        if hasattr(update, 'callback_query') and update.callback_query:
-            await update.callback_query.edit_message_text(
-                texto,
-                reply_markup=reply_markup,
-                parse_mode='Markdown'
-            )
-        else:
-            await update.message.reply_text(
-                texto,
-                reply_markup=reply_markup,
-                parse_mode='Markdown'
-            )
-    except BadRequest as e:
-        if "Message is not modified" not in str(e):
-            print(f"Erro ao gerenciar usuários: {str(e)}")
-    except Exception as e:
-        print(f"Erro ao gerenciar usuários: {str(e)}")
