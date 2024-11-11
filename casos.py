@@ -10,6 +10,8 @@ from database_casos import (
 )
 from database import get_user_display_info, get_usuarios_cadastrados
 from decorators import user_approved, admin_required
+from telegram.constants import ParseMode
+from database_estatisticas import incrementar_contador, registrar_acao_usuario
 
 @user_approved
 async def menu_casos(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -102,7 +104,6 @@ async def listar_casos_ajuste(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
 
 @user_approved
-@user_approved
 async def handle_caso_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get('criando_caso'):
         try:
@@ -131,39 +132,63 @@ async def handle_caso_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                     context.user_data['caso_observacoes'] = update.message.text.strip()
                 
                 # Criar o caso
-                caso_id = adicionar_caso_db(
-                    user_id=update.effective_user.id,
-                    titulo=context.user_data['caso_titulo'],
-                    descricao=context.user_data['caso_descricao'],
-                    observacoes=context.user_data['caso_observacoes']
-                )
-                
-                if caso_id:
-                    texto_resposta = "✅ *Caso criado com sucesso!*\n\n"
-                    texto_resposta += f"📌 *Título:* {context.user_data['caso_titulo']}\n\n"
-                    texto_resposta += f"📝 *Descrição:* {context.user_data['caso_descricao']}\n"
+                try:
+                    caso_id = adicionar_caso_db(
+                        user_id=update.effective_user.id,
+                        titulo=context.user_data['caso_titulo'],
+                        descricao=context.user_data['caso_descricao'],
+                        observacoes=context.user_data['caso_observacoes']
+                    )
                     
-                    if context.user_data['caso_observacoes']:
-                        texto_resposta += f"\n📋 *Observações:* {context.user_data['caso_observacoes']}"
-                    
+                    if caso_id:
+                        keyboard = [
+                            [InlineKeyboardButton("📁 Menu Casos", callback_data='casos')],
+                            [InlineKeyboardButton("🏠 Menu Principal", callback_data='menu_principal')]
+                        ]
+                        reply_markup = InlineKeyboardMarkup(keyboard)
+                        
+                        texto_resposta = "✅ *Caso criado com sucesso!*\n\n"
+                        texto_resposta += f"📌 *Título:* {context.user_data['caso_titulo']}\n"
+                        texto_resposta += f"📝 *Descrição:* {context.user_data['caso_descricao']}\n"
+                        
+                        if context.user_data['caso_observacoes']:
+                            texto_resposta += f"\n📋 *Observações:* {context.user_data['caso_observacoes']}"
+                        
+                        await update.message.reply_text(
+                            texto_resposta,
+                            reply_markup=reply_markup,
+                            parse_mode=ParseMode.MARKDOWN
+                        )
+                        
+                        # Registrar estatísticas
+                        incrementar_contador('casos')
+                        registrar_acao_usuario(update.effective_user.id, 'novo_caso')
+                    else:
+                        keyboard = [
+                            [InlineKeyboardButton("🔄 Tentar Novamente", callback_data='caso_novo')],
+                            [InlineKeyboardButton("🔙 Menu Casos", callback_data='casos')]
+                        ]
+                        reply_markup = InlineKeyboardMarkup(keyboard)
+                        
+                        await update.message.reply_text(
+                            "❌ *Erro ao criar caso*\n\n"
+                            "Ocorreu um erro ao salvar o caso. Por favor, tente novamente.",
+                            reply_markup=reply_markup,
+                            parse_mode=ParseMode.MARKDOWN
+                        )
+                except Exception as e:
+                    print(f"Erro ao criar caso no banco: {e}")
                     keyboard = [
-                        [InlineKeyboardButton("📁 Menu Casos", callback_data='casos')],
-                        [InlineKeyboardButton("🏠 Menu Principal", callback_data='menu_principal')]
+                        [InlineKeyboardButton("🔄 Tentar Novamente", callback_data='caso_novo')],
+                        [InlineKeyboardButton("🔙 Menu Casos", callback_data='casos')]
                     ]
                     reply_markup = InlineKeyboardMarkup(keyboard)
                     
                     await update.message.reply_text(
-                        texto_resposta,
+                        "❌ *Erro ao criar caso*\n\n"
+                        "Ocorreu um erro no banco de dados. Por favor, tente novamente.",
                         reply_markup=reply_markup,
                         parse_mode=ParseMode.MARKDOWN
-                    )
-                    
-                    # Registrar estatísticas
-                    incrementar_contador('casos')
-                    registrar_acao_usuario(update.effective_user.id, 'novo_caso')
-                else:
-                    await update.message.reply_text(
-                        "❌ Erro ao criar caso. Tente novamente."
                     )
                 
                 # Limpar dados do contexto
@@ -171,8 +196,17 @@ async def handle_caso_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                 
         except Exception as e:
             print(f"Erro ao criar caso: {e}")
+            keyboard = [
+                [InlineKeyboardButton("🔄 Tentar Novamente", callback_data='caso_novo')],
+                [InlineKeyboardButton("🔙 Menu Casos", callback_data='casos')]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
             await update.message.reply_text(
-                "❌ Erro ao criar caso. Tente novamente."
+                "❌ *Erro ao criar caso*\n\n"
+                f"Erro: {str(e)}",
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN
             )
             context.user_data.clear()
 
