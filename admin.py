@@ -19,6 +19,7 @@ from database import (
 )
 from decorators import admin_required 
 
+@admin_required  # Adicione este decorador
 async def menu_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Menu principal de administração"""
     keyboard = [
