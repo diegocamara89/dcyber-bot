@@ -422,6 +422,41 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
         
         elif query.data == 'admin_aprovar_usuarios':
             await menu_aprovar_usuarios(update, context)
+            
+        elif query.data == 'listar_usuarios':
+            usuarios = listar_usuarios()
+            texto = "👥 *Lista de Usuários*\n\n"
+            keyboard = []
+            
+            for user in usuarios:
+                user_id, nome, username, nivel, data_cadastro = user
+                if nivel != 'admin':  # Não permite gerenciar administradores
+                    nivel_emoji = {
+                        'dpc': '🔰',
+                        'user': '👤',
+                        'pendente': '⏳'
+                    }.get(nivel, '❓')
+                    
+                    texto += f"{nivel_emoji} *{nome}*\n"
+                    texto += f"├ ID: `{user_id}`\n"
+                    texto += f"├ Username: @{username if username else 'Não informado'}\n"
+                    texto += f"├ Nível: {nivel}\n\n"
+                    
+                    keyboard.append([
+                        InlineKeyboardButton(
+                            f"⚙️ Gerenciar {nome}", 
+                            callback_data=f'gerenciar_usuario_{user_id}'
+                        )
+                    ])
+            
+            keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data='admin_usuarios')])
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await query.edit_message_text(
+                text=texto,
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
         
         elif query.data.startswith('admin_aprovar_'):
             user_id = int(query.data.replace('admin_aprovar_', ''))
@@ -470,7 +505,35 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
             await gerenciar_usuarios(update, context)
         
         elif query.data.startswith('gerenciar_usuario_'):
-            await menu_gerenciar_usuario_individual(update, context)
+            user_id = int(query.data.split('_')[-1])
+            user_info = get_user_display_info(user_id)
+            
+            if not user_info:
+                await query.answer("❌ Usuário não encontrado")
+                return
+            
+            texto = f"⚙️ *Gerenciar Usuário*\n\n"
+            texto += f"👤 Nome: {user_info['nome_completo']}\n"
+            texto += f"🆔 ID: `{user_info['user_id']}`\n"
+            texto += f"📝 Username: @{user_info['username'] if user_info['username'] else 'Não informado'}\n"
+            texto += f"🔰 Nível: {user_info['nivel']}\n"
+            texto += f"📊 Status: {'✅ Ativo' if user_info['ativo'] else '❌ Inativo'}\n"
+            
+            keyboard = [
+                [InlineKeyboardButton("👑 Admin", callback_data=f'set_nivel_admin_{user_id}'),
+                 InlineKeyboardButton("🔰 DPC", callback_data=f'set_nivel_dpc_{user_id}')],
+                [InlineKeyboardButton("👤 Usuário", callback_data=f'set_nivel_user_{user_id}')],
+                [InlineKeyboardButton("✅ Ativar", callback_data=f'set_status_ativo_{user_id}'),
+                 InlineKeyboardButton("❌ Desativar", callback_data=f'set_status_inativo_{user_id}')],
+                [InlineKeyboardButton("🔙 Voltar", callback_data='listar_usuarios')]
+            ]
+            
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.edit_message_text(
+                text=texto,
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
         
         elif query.data == 'admin_enviar_mensagem':
             await iniciar_envio_mensagem(update, context)
@@ -486,7 +549,12 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
             _, nivel, user_id = query.data.split('_')
             if alterar_nivel_usuario(int(user_id), nivel):
                 await query.answer(f"✅ Nível alterado para {nivel}")
-                await gerenciar_usuarios(update, context)
+                await query.edit_message_text(
+                    "✅ Nível alterado com sucesso!\nVoltando para a lista de usuários...",
+                    reply_markup=InlineKeyboardMarkup([[
+                        InlineKeyboardButton("🔄 Atualizar Lista", callback_data='listar_usuarios')
+                    ]])
+                )
             else:
                 await query.answer("❌ Erro ao alterar nível")
         
@@ -499,41 +567,25 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
                 sucesso = desativar_usuario(user_id)
             
             if sucesso:
+                try:
+                    if status != 'ativo':
+                        await context.bot.send_message(
+                            chat_id=user_id,
+                            text="❌ Seu acesso foi revogado. Você precisará solicitar nova aprovação para usar o bot."
+                        )
+                except Exception as e:
+                    print(f"Erro ao notificar usuário: {e}")
+                
                 await query.answer(f"✅ Status alterado com sucesso")
-                await gerenciar_usuarios(update, context)
+                await query.edit_message_text(
+                    "✅ Operação realizada com sucesso!\nVoltando para a lista de usuários...",
+                    reply_markup=InlineKeyboardMarkup([[
+                        InlineKeyboardButton("🔄 Atualizar Lista", callback_data='listar_usuarios')
+                    ]])
+                )
             else:
                 await query.answer("❌ Erro ao alterar status")
         
-        elif query.data.startswith('user_nivel_'):
-            _, nivel, user_id = query.data.split('_')
-            user_id = int(user_id)
-            if alterar_nivel_usuario(user_id, nivel):
-                await query.answer(f"✅ Nível alterado para {nivel}")
-                await menu_usuarios(update, context)
-            else:
-                await query.answer("❌ Erro ao alterar nível")
-        
-        elif query.data.startswith('user_ativar_'):
-            user_id = int(query.data.replace('user_ativar_', ''))
-            if aprovar_usuario(user_id):
-                await query.answer("✅ Usuário ativado")
-                await menu_usuarios(update, context)
-            else:
-                await query.answer("❌ Erro ao ativar usuário")
-        
-        elif query.data.startswith('set_status_inativo_'):
-            user_id = int(query.data.split('_')[-1])
-            if desativar_usuario(user_id):
-                try:
-                    # Notifica o usuário que foi desativado
-                     await context.bot.send_message(chat_id=user_id, text="❌ Seu acesso foi revogado. Você precisará solicitar nova aprovação para usar o bot.")
-                except Exception as e: print(f"Erro ao notificar usuário desativado: {e}")
-                
-                await query.answer("✅ Usuário desativado com sucesso")
-                await menu_usuarios(update, context)
-            else:
-                await query.answer("❌ Erro ao desativar usuário")
-
         elif query.data == 'relatorio_hoje':
             hoje = datetime.now()
             inicio = hoje.replace(hour=0, minute=0, second=0)
