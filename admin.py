@@ -104,7 +104,6 @@ async def gerenciar_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE)
     )
 
 async def menu_gerenciar_usuario_individual(update: Update, context: ContextTypes.DEFAULT_TYPE):
-async def menu_gerenciar_usuario_individual(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Menu de gerenciamento de um usuário específico"""
     query = update.callback_query
     user_id = int(query.data.split('_')[-1])
@@ -530,6 +529,16 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
             inicio = (hoje.replace(day=1) - timedelta(days=1)).replace(day=1)
             fim = hoje.replace(day=1) - timedelta(days=1)
             await gerar_relatorio(update, context, inicio, fim, "Mês anterior")
+                    elif query.data.startswith('user_desativar_'):
+            user_id = int(query.data.replace('user_desativar_', ''))
+            if desativar_usuario(user_id):
+                await query.answer("✅ Usuário desativado")
+                await menu_usuarios(update, context)
+            else:
+                await query.answer("❌ Erro ao desativar usuário")
+    except Exception as e:
+        print(f"Erro no callback administrativo: {e}")
+        await query.answer("❌ Erro ao processar comando")
     
     except Exception as e:
         print(f"Erro em handle_admin_callback: {str(e)}")
