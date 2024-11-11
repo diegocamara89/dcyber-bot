@@ -443,12 +443,13 @@ async def handle_lembrete_message(update: Update, context: ContextTypes.DEFAULT_
             context.user_data.clear()
 
 async def verificar_lembretes(context: ContextTypes.DEFAULT_TYPE):
-    """Verifica lembretes pendentes e envia notificações"""
-    agora = datetime.now()
+    timezone = pytz.timezone('America/Sao_Paulo')
+    agora = datetime.now(timezone)
     conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
+        cursor.execute("SET TIME ZONE 'America/Sao_Paulo'")
         cursor.execute('''
             SELECT l.id, ld.user_id, l.titulo, l.data, l.hora
             FROM lembretes l
@@ -481,9 +482,6 @@ async def verificar_lembretes(context: ContextTypes.DEFAULT_TYPE):
                 
             except Exception as e:
                 print(f"Erro ao enviar notificação: {e}")
-                
-    except Exception as e:
-        print(f"Erro ao verificar lembretes: {e}")
     finally:
         cursor.close()
         conn.close()
