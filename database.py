@@ -170,6 +170,34 @@ def recusar_usuario(user_id: int) -> bool:
         cursor.close()
         conn.close()
 
+def alterar_nivel_usuario(user_id: int, novo_nivel: str) -> bool:
+    """Altera o nível de acesso de um usuário"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            UPDATE usuarios 
+            SET nivel = %s 
+            WHERE user_id = %s
+            RETURNING user_id, nivel
+        ''', (novo_nivel, user_id))
+        
+        result = cursor.fetchone()
+        conn.commit()
+        
+        if result:
+            print(f"Nível alterado - User ID: {result[0]}, Novo nível: {result[1]}")
+            return True
+        return False
+        
+    except Exception as e:
+        print(f"Erro ao alterar nível do usuário: {e}")
+        conn.rollback()
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
 # Funções de assinaturas
 def inserir_assinatura(user_id, username, documento, sequencia):
     conn = get_db_connection()
