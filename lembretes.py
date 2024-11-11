@@ -372,9 +372,7 @@ async def handle_lembretes_callback(update: Update, context: ContextTypes.DEFAUL
             )
 
 @user_approved
-@user_approved
 async def handle_lembrete_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler para mensagens durante criação de lembretes"""
     if not context.user_data.get('criando_lembrete'):
         return
 
@@ -382,7 +380,7 @@ async def handle_lembrete_message(update: Update, context: ContextTypes.DEFAULT_
     texto = update.message.text.strip()
 
     if estado == TITULO:
-        if len(texto) > 100:  # Limite de caracteres
+        if len(texto) > 100:
             await update.message.reply_text("❌ O título é muito longo. Use no máximo 100 caracteres.")
             return
             
@@ -397,8 +395,19 @@ async def handle_lembrete_message(update: Update, context: ContextTypes.DEFAULT_
     
     elif estado == DATA:
         try:
+            agora = datetime.now(TIMEZONE)
             data = datetime.strptime(texto, "%d/%m/%Y")
-            data = timezone.localize(data)
+            data = TIMEZONE.localize(data)  # Use TIMEZONE em vez de timezone
+            
+            if data.date() < agora.date():
+                await update.message.reply_text(
+                    "❌ Não é possível criar lembretes para datas passadas!",
+                    reply_markup=InlineKeyboardMarkup([[
+                        InlineKeyboardButton("🔙 Voltar", callback_data='lembretes')
+                    ]])
+                )
+                return
+            
             context.user_data['data'] = data
             context.user_data['estado_lembrete'] = HORA
             await update.message.reply_text(
