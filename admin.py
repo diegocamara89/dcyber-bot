@@ -506,82 +506,91 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
                 await menu_usuarios(update, context)
             else:
                 await query.answer("❌ Erro ao desativar usuário")
-        elif query.data == 'relatorio_hoje':
-            hoje = datetime.now()
-            inicio = hoje.replace(hour=0, minute=0, second=0)
-            fim = hoje.replace(hour=23, minute=59, second=59)
-            await gerar_relatorio(update, context, inicio, fim, "Hoje")
+       elif query.data == 'relatorio_hoje':
+        hoje = datetime.now()
+        inicio = hoje.replace(hour=0, minute=0, second=0)
+        fim = hoje.replace(hour=23, minute=59, second=59)
+        await gerar_relatorio(update, context, inicio, fim, "Hoje")
 
-        elif query.data == 'relatorio_semana':
-            hoje = datetime.now()
-            inicio = hoje - timedelta(days=7)
-            fim = hoje
-            await gerar_relatorio(update, context, inicio, fim, "Últimos 7 dias")
+    elif query.data == 'relatorio_semana':
+        hoje = datetime.now()
+        inicio = hoje - timedelta(days=7)
+        fim = hoje
+        await gerar_relatorio(update, context, inicio, fim, "Últimos 7 dias")
 
-        elif query.data == 'relatorio_mes':
-            hoje = datetime.now()
-            inicio = hoje.replace(day=1)
-            fim = hoje
-            await gerar_relatorio(update, context, inicio, fim, "Este mês")
+    elif query.data == 'relatorio_mes':
+        hoje = datetime.now()
+        inicio = hoje.replace(day=1)
+        fim = hoje
+        await gerar_relatorio(update, context, inicio, fim, "Este mês")
 
-        elif query.data == 'relatorio_mes_anterior':
-            hoje = datetime.now()
-            inicio = (hoje.replace(day=1) - timedelta(days=1)).replace(day=1)
-            fim = hoje.replace(day=1) - timedelta(days=1)
+    elif query.data == 'relatorio_mes_anterior':
+        hoje = datetime.now()
+        inicio = (hoje.replace(day=1) - timedelta(days=1)).replace(day=1)
+        fim = hoje.replace(day=1) - timedelta(days=1)
+        await gerar_relatorio(update, context, inicio, fim, "Mês anterior")
+
+except Exception as e:
+    print(f"Erro no callback administrativo: {e}")
+    await query.answer("❌ Erro ao processar comando")
 
 
 async def gerar_relatorio(update: Update, context: ContextTypes.DEFAULT_TYPE, inicio, fim, periodo):
     """Gera relatório detalhado de atividades"""
-    # Ajustar timezone das datas de início e fim
-    timezone = pytz.timezone('America/Sao_Paulo')
-    inicio = timezone.localize(inicio)
-    fim = timezone.localize(fim)
-    
-    acessos, assinaturas = obter_relatorio_atividades(inicio, fim)
-    
-    texto = f"📊 *Relatório de Atividades - {periodo}*\n\n"
-    
-    # Contadores
-    total_acessos = 0
-    total_assinaturas = 0
-    usuarios_ativos = set()
-    
-    if acessos:
-        texto += "*👥 Acessos ao Sistema*\n"
-        for nome, nivel, data, primeiro_acesso, ultimo_acesso, total in acessos:
-            total_acessos += total
-            usuarios_ativos.add(nome)
-            texto += f"• {nome} ({nivel})\n"
-            # Converter horários para timezone local
-            primeiro_acesso = primeiro_acesso.astimezone(timezone)
-            ultimo_acesso = ultimo_acesso.astimezone(timezone)
-            texto += f"  └ Primeiro acesso: {primeiro_acesso.strftime('%H:%M')}\n"
-            texto += f"  └ Último acesso: {ultimo_acesso.strftime('%H:%M')}\n"
-            texto += f"  └ Total de acessos: {total}\n\n"
-    
-    if assinaturas:
-        texto += "*📝 Assinaturas Processadas*\n"
-        for nome, data, total in assinaturas:
-            total_assinaturas += total
-            texto += f"• {nome}: {total} assinaturas\n"
-    
-    # Resumo
-    texto += "\n*📈 Resumo do Período*\n"
-    texto += f"• Total de acessos: {total_acessos}\n"
-    texto += f"• Usuários ativos: {len(usuarios_ativos)}\n"
-    texto += f"• Assinaturas processadas: {total_assinaturas}\n"
-    
-    if not acessos and not assinaturas:
-        texto += "\nNenhuma atividade registrada no período."
-    
-    keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data='admin_relatorios')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await update.callback_query.edit_message_text(
-        texto,
-        reply_markup=reply_markup,
-        parse_mode='Markdown'
-    )
+    try:
+        # Ajustar timezone das datas de início e fim
+        timezone = pytz.timezone('America/Sao_Paulo')
+        inicio = timezone.localize(inicio)
+        fim = timezone.localize(fim)
+
+        acessos, assinaturas = obter_relatorio_atividades(inicio, fim)
+
+        texto = f"📊 *Relatório de Atividades - {periodo}*\n\n"
+
+        # Contadores
+        total_acessos = 0
+        total_assinaturas = 0
+        usuarios_ativos = set()
+
+        if acessos:
+            texto += "*👥 Acessos ao Sistema*\n"
+            for nome, nivel, data, primeiro_acesso, ultimo_acesso, total in acessos:
+                total_acessos += total
+                usuarios_ativos.add(nome)
+                texto += f"• {nome} ({nivel})\n"
+                # Converter horários para timezone local
+                primeiro_acesso = primeiro_acesso.astimezone(timezone)
+                ultimo_acesso = ultimo_acesso.astimezone(timezone)
+                texto += f"  └ Primeiro acesso: {primeiro_acesso.strftime('%H:%M')}\n"
+                texto += f"  └ Último acesso: {ultimo_acesso.strftime('%H:%M')}\n"
+                texto += f"  └ Total de acessos: {total}\n\n"
+
+        if assinaturas:
+            texto += "*📝 Assinaturas Processadas*\n"
+            for nome, data, total in assinaturas:
+                total_assinaturas += total
+                texto += f"• {nome}: {total} assinaturas\n"
+
+        # Resumo
+        texto += "\n*📈 Resumo do Período*\n"
+        texto += f"• Total de acessos: {total_acessos}\n"
+        texto += f"• Usuários ativos: {len(usuarios_ativos)}\n"
+        texto += f"• Assinaturas processadas: {total_assinaturas}\n"
+
+        if not acessos and not assinaturas:
+            texto += "\nNenhuma atividade registrada no período."
+
+        keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data='admin_relatorios')]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.callback_query.edit_message_text(
+            texto,
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
+        )
+    except Exception as e:
+        print(f"Erro ao gerar relatório: {e}")
+        await update.callback_query.answer("❌ Erro ao gerar relatório")
 
 async def gerenciar_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Menu completo de gerenciamento de usuários"""
