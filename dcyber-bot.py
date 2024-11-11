@@ -1,6 +1,7 @@
 # dcyber-bot.py
 import os
 import pytz
+timezone = pytz.timezone('America/Sao_Paulo')
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
