@@ -473,32 +473,42 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
                 await query.answer("❌ Erro ao processar alteração de nível")
         
         elif query.data.startswith('set_status_'):
-            _, status, user_id = query.data.split('_')
-            user_id = int(user_id)
-            if status == 'ativo':
-                sucesso = aprovar_usuario(user_id)
-            else:
-                sucesso = desativar_usuario(user_id)
-            
-            if sucesso:
-                try:
-                    if status != 'ativo':
-                        await context.bot.send_message(
-                            chat_id=user_id,
-                            text="❌ Seu acesso foi revogado. Você precisará solicitar nova aprovação para usar o bot."
+            try:
+                partes = query.data.split('_')
+                if len(partes) >= 4:
+                    status = partes[2]  # ativo ou inativo
+                    user_id = partes[3]  # ID do usuário
+                    user_id = int(user_id)
+                    
+                    if status == 'ativo':
+                        sucesso = aprovar_usuario(user_id)
+                    else:
+                        sucesso = desativar_usuario(user_id)
+                    
+                    if sucesso:
+                        try:
+                            if status != 'ativo':
+                                await context.bot.send_message(
+                                    chat_id=user_id,
+                                    text="❌ Seu acesso foi revogado. Você precisará solicitar nova aprovação para usar o bot."
+                                )
+                        except Exception as e:
+                            print(f"Erro ao notificar usuário: {e}")
+                        
+                        await query.answer(f"✅ Status alterado com sucesso")
+                        await query.edit_message_text(
+                            "✅ Operação realizada com sucesso!\nVoltando para a lista de usuários...",
+                            reply_markup=InlineKeyboardMarkup([[
+                                InlineKeyboardButton("🔄 Atualizar Lista", callback_data='admin_gerenciar_usuarios')
+                            ]])
                         )
-                except Exception as e:
-                    print(f"Erro ao notificar usuário: {e}")
-                
-                await query.answer(f"✅ Status alterado com sucesso")
-                await query.edit_message_text(
-                    "✅ Operação realizada com sucesso!\nVoltando para a lista de usuários...",
-                    reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("🔄 Atualizar Lista", callback_data='admin_gerenciar_usuarios')
-                    ]])
-                )
-            else:
-                await query.answer("❌ Erro ao alterar status")
+                    else:
+                        await query.answer("❌ Erro ao alterar status")
+                else:
+                    await query.answer("❌ Formato de callback inválido")
+            except Exception as e:
+                print(f"Erro ao alterar status do usuário: {e}")
+                await query.answer("❌ Erro ao processar alteração de status")
         
         elif query.data == 'relatorio_hoje':
             hoje = datetime.now()
