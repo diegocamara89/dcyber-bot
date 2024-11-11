@@ -1,6 +1,7 @@
 # lembretes.py
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
+from telegram.constants import ParseMode
 from datetime import datetime, timedelta
 from database import (
     get_db_connection,
@@ -212,20 +213,27 @@ def adicionar_lembrete_db(user_id: int, titulo: str, data: str, hora: str, desti
     try:
         cursor.execute('''
         INSERT INTO lembretes (criador_id, titulo, data, hora, ativo)
-        VALUES (?, ?, ?, ?, TRUE)
+        VALUES (%s, %s, %s, %s, TRUE)
+        RETURNING id
         ''', (user_id, titulo, data, hora))
-        lembrete_id = cursor.lastrowid
+        
+        lembrete_id = cursor.fetchone()[0]
         
         if not destinatarios:  # Se vazio, apenas o criador
             destinatarios = [user_id]
         elif 'todos' in destinatarios:
-            cursor.execute('SELECT user_id FROM usuarios WHERE ativo = TRUE AND nivel != "pendente"')
+            cursor.execute('''
+                SELECT user_id 
+                FROM usuarios 
+                WHERE ativo = TRUE 
+                AND nivel != 'pendente'
+            ''')
             destinatarios = [row[0] for row in cursor.fetchall()]
         
         for dest_id in destinatarios:
             cursor.execute('''
             INSERT INTO lembrete_destinatarios (lembrete_id, user_id, notificado)
-            VALUES (?, ?, FALSE)
+            VALUES (%s, %s, FALSE)
             ''', (lembrete_id, dest_id))
         
         conn.commit()
@@ -233,6 +241,7 @@ def adicionar_lembrete_db(user_id: int, titulo: str, data: str, hora: str, desti
         registrar_acao_usuario(user_id, 'novo_lembrete')
         return lembrete_id
     finally:
+        cursor.close()
         conn.close()
 
 def consultar_lembretes_db(user_id: int):
@@ -242,9 +251,9 @@ def consultar_lembretes_db(user_id: int):
     try:
         cursor.execute('''
         SELECT l.id, l.titulo, l.data, l.hora,
-               GROUP_CONCAT(
+               string_agg(
                    CASE 
-                       WHEN u.nome LIKE '% %' THEN substr(u.nome, 1, instr(u.nome, ' ')-1)
+                       WHEN u.nome LIKE %s THEN split_part(u.nome, ' ', 1)
                        ELSE u.nome
                    END, 
                    ', '
@@ -253,12 +262,13 @@ def consultar_lembretes_db(user_id: int):
         JOIN lembrete_destinatarios ld ON l.id = ld.lembrete_id
         LEFT JOIN usuarios u ON ld.user_id = u.user_id
         WHERE l.ativo = TRUE 
-        AND (l.criador_id = ? OR ld.user_id = ?)
+        AND (l.criador_id = %s OR ld.user_id = %s)
         GROUP BY l.id
         ORDER BY l.data ASC, l.hora ASC
-        ''', (user_id, user_id))
+        ''', ('% %', user_id, user_id))
         return cursor.fetchall()
     finally:
+        cursor.close()
         conn.close()
 
 def apagar_lembrete_db(lembrete_id: int):
@@ -266,13 +276,20 @@ def apagar_lembrete_db(lembrete_id: int):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute('UPDATE lembretes SET ativo = FALSE WHERE id = ?', (lembrete_id,))
+        cursor.execute('''
+            UPDATE lembretes 
+            SET ativo = FALSE 
+            WHERE id = %s
+            RETURNING id
+        ''', (lembrete_id,))
+        result = cursor.fetchone()
         conn.commit()
-        return True
+        return bool(result)
     except Exception as e:
         print(f"Erro ao apagar lembrete: {e}")
         return False
     finally:
+        cursor.close()
         conn.close()
 
 @user_approved
@@ -433,8 +450,8 @@ async def verificar_lembretes(context: ContextTypes.DEFAULT_TYPE):
             SELECT l.id, ld.user_id, l.titulo, l.data, l.hora
             FROM lembretes l
             JOIN lembrete_destinatarios ld ON l.id = ld.lembrete_id
-            WHERE l.data = ? 
-            AND l.hora <= ?
+            WHERE l.data = %s 
+            AND l.hora <= %s
             AND ld.notificado = FALSE
             AND l.ativo = TRUE
         ''', (agora.strftime('%Y-%m-%d'), agora.strftime('%H:%M')))
@@ -454,7 +471,8 @@ async def verificar_lembretes(context: ContextTypes.DEFAULT_TYPE):
                 cursor.execute('''
                     UPDATE lembrete_destinatarios 
                     SET notificado = TRUE 
-                    WHERE lembrete_id = ? AND user_id = ?
+                    WHERE lembrete_id = %s AND user_id = %s
+                    RETURNING id
                 ''', (lembrete_id, user_id))
                 conn.commit()
                 
@@ -464,4 +482,5 @@ async def verificar_lembretes(context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         print(f"Erro ao verificar lembretes: {e}")
     finally:
+        cursor.close()
         conn.close()
