@@ -372,15 +372,6 @@ async def processar_id_dpc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     try:
         novo_dpc_id = int(update.message.text)
-        
-        # Primeiro, remove o nível DPC de qualquer usuário existente
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('UPDATE usuarios SET nivel = "user" WHERE nivel = "dpc"')
-        conn.commit()
-        conn.close()
-        
-        # Depois, define o novo DPC
         if alterar_nivel_usuario(novo_dpc_id, 'dpc'):
             keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data='admin_usuarios')]]
             reply_markup = InlineKeyboardMarkup(keyboard)
