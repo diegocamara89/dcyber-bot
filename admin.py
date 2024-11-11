@@ -64,35 +64,50 @@ async def menu_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def gerenciar_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Menu completo de gerenciamento de usuários"""
+    """Lista usuários com opções de gerenciamento"""
     print("Início de gerenciar_usuarios")
     usuarios = listar_usuarios()
-    texto = "👥 *Usuários do Sistema:*\n\n"
+    texto = "👥 *Lista de Usuários*\n\n"
     keyboard = []
     
     for user in usuarios:
         user_id, nome, username, nivel, data_cadastro = user
-        nivel_emoji = {
-            'admin': '👑',
-            'dpc': '🔰',
-            'user': '👤',
-            'pendente': '⏳'
-        }.get(nivel, '❓')
-        
-        # Adiciona as informações do usuário
-        texto += f"{nivel_emoji} *{nome}*\n"
-        texto += f"├ ID: `{user_id}`\n"
-        texto += f"├ Username: @{username if username else 'Não informado'}\n"
-        texto += f"├ Nível: {nivel}\n\n"
-        
-        # Adiciona botão para gerenciar cada usuário
         if nivel != 'admin':  # Não permite gerenciar administradores
+            nivel_emoji = {
+                'dpc': '🔰',
+                'user': '👤',
+                'pendente': '⏳'
+            }.get(nivel, '❓')
+            
+            # Adiciona informações do usuário
+            texto += f"{nivel_emoji} *{nome}*\n"
+            texto += f"├ ID: `{user_id}`\n"
+            texto += f"├ Username: @{username if username else 'Não informado'}\n"
+            texto += f"├ Nível: {nivel}\n\n"
+            
+            # Adiciona botão de gerenciamento para cada usuário
             keyboard.append([
                 InlineKeyboardButton(
                     f"⚙️ Gerenciar {nome}", 
                     callback_data=f'gerenciar_usuario_{user_id}'
                 )
             ])
+    
+    # Adiciona botões de navegação
+    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data='admin_usuarios')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    try:
+        await update.callback_query.edit_message_text(
+            text=texto,
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
+        )
+    except BadRequest as e:
+        if "Message is not modified" not in str(e):
+            print(f"Erro ao gerenciar usuários: {str(e)}")
+    except Exception as e:
+        print(f"Erro ao gerenciar usuários: {str(e)}")
     
     # Botões de navegação
     keyboard.append([InlineKeyboardButton("✅ Aprovar Usuários", callback_data='admin_aprovar_usuarios')])
