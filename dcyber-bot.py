@@ -373,7 +373,15 @@ async def handle_mensagem(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     print("🚀 Iniciando o bot...")
-    
+
+      conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SET timezone TO 'America/Sao_Paulo'")
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
     # Criar todas as tabelas necessárias
     criar_tabela_usuarios(ADMIN_ID)
     atualizar_nome_admin(ADMIN_ID)
