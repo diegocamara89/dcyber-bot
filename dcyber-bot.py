@@ -379,6 +379,7 @@ def main():
     criar_todas_tabelas()
     criar_tabela_estatisticas()
     criar_tabela_contatos()
+    criar_tabela_casos() 
     
     # Criar tabelas específicas
     conn = get_db_connection()
