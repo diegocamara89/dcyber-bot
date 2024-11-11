@@ -41,29 +41,22 @@ def criar_tabela_casos():
         conn.close()
 
 def adicionar_caso_db(user_id: int, titulo: str, descricao: str, observacoes: str = None):
-    """Adiciona um novo caso"""
     conn = db.get_connection()
     cursor = conn.cursor()
     try:
         cursor.execute('''
-            INSERT INTO casos (criador_id, titulo, descricao, observacoes)
+            INSERT INTO casos (user_id, titulo, descricao, observacoes)
             VALUES (%s, %s, %s, %s)
             RETURNING id
         ''', (user_id, titulo, descricao, observacoes))
         
         caso_id = cursor.fetchone()[0]
-        
-        # Adiciona o criador como responsável
-        cursor.execute('''
-            INSERT INTO caso_responsaveis (caso_id, user_id)
-            VALUES (%s, %s)
-        ''', (caso_id, user_id))
-        
         conn.commit()
         incrementar_contador('casos')
         return caso_id
     except Exception as e:
         print(f"Erro ao adicionar caso: {e}")
+        conn.rollback()
         return None
     finally:
         cursor.close()
