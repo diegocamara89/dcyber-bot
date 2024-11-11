@@ -1,8 +1,8 @@
+import pytz
+from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.error import BadRequest
-from datetime import datetime, timedelta
-from datetime import datetime, timedelta  # Adicione se ainda não estiver lá
 from database import (
     is_admin, 
     listar_usuarios, 
@@ -15,9 +15,12 @@ from database import (
     aprovar_usuario,
     recusar_usuario,
     desativar_usuario,
-    get_user_display_info  # Adicione esta linha
+    get_user_display_info
 )
-from decorators import admin_required 
+from decorators import admin_required
+
+# Configuração global do timezone
+TIMEZONE = pytz.timezone('America/Sao_Paulo')
 
 @admin_required  # Adicione este decorador
 async def menu_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
