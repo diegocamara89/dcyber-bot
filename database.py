@@ -84,7 +84,8 @@ def criar_tabela_lembretes():
             data DATE NOT NULL,
             hora TIME NOT NULL,
             ativo BOOLEAN DEFAULT TRUE,
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (criador_id) REFERENCES usuarios (user_id)
         )
         ''')
         
@@ -95,6 +96,7 @@ def criar_tabela_lembretes():
             user_id BIGINT NOT NULL,
             notificado BOOLEAN DEFAULT FALSE,
             FOREIGN KEY (lembrete_id) REFERENCES lembretes (id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES usuarios (user_id),
             UNIQUE(lembrete_id, user_id)
         )
         ''')
