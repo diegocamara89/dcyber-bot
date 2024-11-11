@@ -336,17 +336,15 @@ async def handle_lembretes_callback(update: Update, context: ContextTypes.DEFAUL
         context.user_data.clear()
         await menu_lembretes(update, context)
     
+    # No arquivo lembretes.py, modifique a parte do handle_lembretes_callback:
+
     elif query.data == 'lembrete_dest_eu':
-        context.user_data['destinatarios'] = []  # Apenas o criador
-        lembrete_id = await finalizar_lembrete(update, context)
-        if lembrete_id:
-            await menu_lembretes(update, context)
+        context.user_data['destinatarios'] = [str(query.from_user.id)]  # Apenas o criador
+        await finalizar_lembrete(update, context)  # Remove o redirecionamento automático
     
     elif query.data == 'lembrete_dest_todos':
         context.user_data['destinatarios'] = ['todos']
-        lembrete_id = await finalizar_lembrete(update, context)
-        if lembrete_id:
-            await menu_lembretes(update, context)
+        await finalizar_lembrete(update, context)  # Remove o redirecionamento automático
     
     elif query.data == 'lembrete_dest_selecionar':
         await selecionar_usuarios(update, context)
