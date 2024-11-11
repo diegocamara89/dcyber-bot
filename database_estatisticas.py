@@ -93,13 +93,12 @@ def incrementar_contador(tipo: str, quantidade: int = 1):
                 pass
 
 def registrar_acao_usuario(user_id: int, tipo_acao: str):
+    timezone = pytz.timezone('America/Sao_Paulo')
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # Configurar timezone
         cursor.execute("SET TIME ZONE 'America/Sao_Paulo'")
         
-        # Verificar se é a primeira ação do usuário
         cursor.execute('''
             SELECT COUNT(*) FROM acoes_usuarios WHERE user_id = %s
         ''', (user_id,))
@@ -107,13 +106,12 @@ def registrar_acao_usuario(user_id: int, tipo_acao: str):
         if cursor.fetchone()[0] == 0:
             incrementar_contador('usuarios')
         
-        # Registrar a ação com timezone correto
-        now = datetime.now(TIMEZONE)
+        agora = datetime.now(timezone)
         cursor.execute('''
             INSERT INTO acoes_usuarios (user_id, tipo_acao, data_hora)
             VALUES (%s, %s, %s)
             RETURNING id
-        ''', (user_id, tipo_acao, now))
+        ''', (user_id, tipo_acao, agora))
         
         result = cursor.fetchone()
         conn.commit()
