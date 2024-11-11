@@ -51,7 +51,7 @@ async def menu_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     keyboard = [
         [InlineKeyboardButton(f"✅ Aprovar Usuários ({total_pendentes})", callback_data='admin_aprovar_usuarios')],
-        [InlineKeyboardButton("👥 Lista de Usuários", callback_data='listar_usuarios')],
+        [InlineKeyboardButton("👥 Gerenciar Usuários", callback_data='admin_gerenciar_usuarios')],
         [InlineKeyboardButton("🔰 Definir DPC", callback_data='definir_dpc')],
         [InlineKeyboardButton("📨 Enviar Mensagem", callback_data='admin_enviar_mensagem')],
         [InlineKeyboardButton("🔙 Voltar", callback_data='menu_admin')]
@@ -62,57 +62,7 @@ async def menu_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text="👥 Gestão de Usuários",
         reply_markup=reply_markup
     )
-
-async def gerenciar_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Menu completo de gerenciamento de usuários"""
-    print("Início de gerenciar_usuarios")
-    usuarios = listar_usuarios()
-    texto = "👥 *Lista de Usuários*\n\n"
-    keyboard = []
-    
-    for user in usuarios:
-        user_id, nome, username, nivel, data_cadastro = user
-        if nivel != 'admin':  # Não permite gerenciar administradores
-            nivel_emoji = {
-                'dpc': '🔰',
-                'user': '👤',
-                'pendente': '⏳'
-            }.get(nivel, '❓')
-            
-            texto += f"{nivel_emoji} *{nome}*\n"
-            texto += f"├ ID: `{user_id}`\n"
-            texto += f"├ Username: @{username if username else 'Não informado'}\n"
-            texto += f"├ Nível: {nivel}\n\n"
-            
-            keyboard.append([
-                InlineKeyboardButton(
-                    f"⚙️ Gerenciar {nome}", 
-                    callback_data=f'gerenciar_usuario_{user_id}'
-                )
-            ])
-    
-    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data='admin_usuarios')])
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    try:
-        if hasattr(update, 'callback_query') and update.callback_query:
-            await update.callback_query.edit_message_text(
-                text=texto,
-                reply_markup=reply_markup,
-                parse_mode='Markdown'
-            )
-        else:
-            await update.message.reply_text(
-                text=texto,
-                reply_markup=reply_markup,
-                parse_mode='Markdown'
-            )
-    except BadRequest as e:
-        if "Message is not modified" not in str(e):
-            print(f"Erro ao gerenciar usuários: {str(e)}")
-    except Exception as e:
-        print(f"Erro ao gerenciar usuários: {str(e)}")
-    
+   
     # Botões de navegação
     keyboard.append([InlineKeyboardButton("✅ Aprovar Usuários", callback_data='admin_aprovar_usuarios')])
     keyboard.append([InlineKeyboardButton("🔰 Definir DPC", callback_data='definir_dpc')])
