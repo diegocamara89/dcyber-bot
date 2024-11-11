@@ -439,7 +439,7 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
         elif query.data == 'admin_enviar_mensagem':
             await iniciar_envio_mensagem(update, context)
         
-        elif query.data.startswith('gerenciar_usuario_'):  # Nova condição adicionada
+        elif query.data.startswith('gerenciar_usuario_'):
             await menu_gerenciar_usuario_individual(update, context)
             
         elif query.data.startswith('msg_'):
@@ -451,7 +451,6 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
         
         elif query.data.startswith('set_nivel_'):
             try:
-                # Exemplo de callback: set_nivel_user_123456789
                 partes = query.data.split('_')
                 if len(partes) >= 4:
                     nivel = partes[2]
@@ -471,7 +470,7 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
                     await query.answer("❌ Formato de callback inválido")
             except Exception as e:
                 print(f"Erro ao processar alteração de nível: {e}")
-              await query.answer("❌ Erro ao processar alteração de nível")
+                await query.answer("❌ Erro ao processar alteração de nível")
         
         elif query.data.startswith('set_status_'):
             _, status, user_id = query.data.split('_')
