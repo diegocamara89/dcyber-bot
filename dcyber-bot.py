@@ -262,45 +262,45 @@ async def texto_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 async def button_handler_main(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     print(f"button_handler_main recebeu callback: {query.data}")
-    await query.answer()
     
-    admin_callbacks = [
-        'admin_usuarios', 'admin_relatorios', 'admin_config',
-        'definir_dpc', 'menu_admin', 'menu_relatorios',
-        'relatorio_hoje', 'relatorio_semana', 'relatorio_mes', 'relatorio_mes_anterior',
-        'config_gerais', 'config_seguranca', 'admin_gerenciar_usuarios',
-        'admin_enviar_mensagem', 'cancelar_envio'
-    ]
-    
-    # Adicionar verificação para callbacks de mensagens
-    if query.data.startswith('msg_') or query.data.startswith('enviar_msg_'):
-        if is_admin(query.from_user.id):
-            await solicitar_mensagem(update, context)
-        return
-    
-    if query.data in admin_callbacks or query.data.startswith('admin_'):
+    # Processar callbacks administrativos
+    if query.data.startswith(('admin_', 'gerenciar_usuario_', 'set_nivel_', 'set_status_', 'menu_admin', 'relatorio_', 'definir_dpc')):
         print(f"Encaminhando para handle_admin_callback: {query.data}")
         await handle_admin_callback(update, context)
-    elif query.data == 'ajuda' or query.data.startswith('ajuda_'):
+        return
+    
+    await query.answer()
+    
+    if query.data == 'ajuda' or query.data.startswith('ajuda_'):
         await handle_ajuda_callback(update, context)
+    
     elif query.data == 'lembretes':
         await menu_lembretes(update, context)
+    
     elif query.data.startswith('lembrete_'):
         await handle_lembretes_callback(update, context)
+    
     elif query.data == 'casos' or query.data.startswith('caso_'):
         await handle_casos_callback(update, context)
+    
     elif query.data == 'contatos':
         await menu_contatos(update, context)
+    
     elif query.data.startswith('contato_'):
         await handle_contatos_callback(update, context)
+    
     elif query.data == 'estatisticas':
         await menu_estatisticas(update, context)
+    
     elif query.data == 'stats_gerais':
         await mostrar_estatisticas_gerais(update, context)
+    
     elif query.data == 'stats_pessoais':
         await mostrar_estatisticas_pessoais(update, context)
+    
     elif query.data == 'menu_principal':
         await start(update, context)
+    
     elif query.data == 'assinaturas':
         keyboard = [
             [InlineKeyboardButton("✍️ Solicitar Assinatura", callback_data='solicitar_assinatura')],
@@ -309,8 +309,10 @@ async def button_handler_main(update: Update, context: ContextTypes.DEFAULT_TYPE
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.message.edit_text("📑 Menu de Assinaturas", reply_markup=reply_markup)
+    
     elif query.data in ['solicitar_assinatura', 'consultar_assinatura']:
         await button_handler(update, context)
+    
     else:
         await button_handler(update, context)
 
