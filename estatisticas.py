@@ -1,3 +1,8 @@
+import pytz
+from datetime import datetime, timedelta
+
+# Configuração global do timezone
+TIMEZONE = pytz.timezone('America/Sao_Paulo')
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
@@ -113,7 +118,7 @@ def get_estatisticas_pessoais(user_id: int):
             stats[acao] = cursor.fetchone()[0]
         
         # Últimos acessos
-          cursor.execute('''
+        cursor.execute('''
             SELECT data_hora AT TIME ZONE 'America/Sao_Paulo'
             FROM acoes_usuarios
             WHERE user_id = %s
