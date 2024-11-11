@@ -97,10 +97,10 @@ def get_estatisticas_gerais():
         conn.close()
 
 def get_estatisticas_pessoais(user_id: int):
-    """Obtém estatísticas pessoais do usuário"""
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        cursor.execute("SET TIME ZONE 'America/Sao_Paulo'")
         stats = {}
         
         # Ações do usuário
@@ -113,11 +113,11 @@ def get_estatisticas_pessoais(user_id: int):
             stats[acao] = cursor.fetchone()[0]
         
         # Últimos acessos
-        cursor.execute('''
-            SELECT data_acesso
-            FROM user_acessos
+          cursor.execute('''
+            SELECT data_hora AT TIME ZONE 'America/Sao_Paulo'
+            FROM acoes_usuarios
             WHERE user_id = %s
-            ORDER BY data_acesso DESC
+            ORDER BY data_hora DESC
             LIMIT 1
         ''', (user_id,))
         ultimo_acesso = cursor.fetchone()
