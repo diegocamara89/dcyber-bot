@@ -104,6 +104,7 @@ async def gerenciar_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE)
     )
 
 async def menu_gerenciar_usuario_individual(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def menu_gerenciar_usuario_individual(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Menu de gerenciamento de um usuário específico"""
     query = update.callback_query
     user_id = int(query.data.split('_')[-1])
@@ -118,13 +119,19 @@ async def menu_gerenciar_usuario_individual(update: Update, context: ContextType
     texto += f"🆔 ID: `{user_info['user_id']}`\n"
     texto += f"📝 Username: @{user_info['username'] if user_info['username'] else 'Não informado'}\n"
     texto += f"🔰 Nível: {user_info['nivel']}\n"
+    texto += f"📊 Status: {'✅ Ativo' if user_info['ativo'] else '❌ Inativo'}\n"
     
     keyboard = [
+        # Botões de nível
         [InlineKeyboardButton("👑 Admin", callback_data=f'set_nivel_admin_{user_id}'),
          InlineKeyboardButton("🔰 DPC", callback_data=f'set_nivel_dpc_{user_id}')],
         [InlineKeyboardButton("👤 Usuário", callback_data=f'set_nivel_user_{user_id}')],
+        
+        # Botões de status
         [InlineKeyboardButton("✅ Ativar", callback_data=f'set_status_ativo_{user_id}'),
          InlineKeyboardButton("❌ Desativar", callback_data=f'set_status_inativo_{user_id}')],
+        
+        # Outras opções
         [InlineKeyboardButton("📨 Enviar Mensagem", callback_data=f'enviar_msg_{user_id}')],
         [InlineKeyboardButton("🔙 Voltar", callback_data='admin_gerenciar_usuarios')]
     ]
@@ -135,6 +142,7 @@ async def menu_gerenciar_usuario_individual(update: Update, context: ContextType
         reply_markup=reply_markup,
         parse_mode='Markdown'
     )
+
 
 # Sistema de mensagens
 async def iniciar_envio_mensagem(update: Update, context: ContextTypes.DEFAULT_TYPE):
