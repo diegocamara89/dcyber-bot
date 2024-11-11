@@ -609,11 +609,7 @@ def alterar_nivel_usuario(user_id: int, novo_nivel: str) -> bool:
     try:
         # Se estiver definindo um novo DPC, primeiro remove o DPC atual
         if novo_nivel == 'dpc':
-            cursor.execute('''
-                UPDATE usuarios 
-                SET nivel = 'user' 
-                WHERE nivel = 'dpc'
-            ''')
+            cursor.execute("UPDATE usuarios SET nivel = 'user' WHERE nivel = 'dpc'")
 
         # Atualiza o nível do usuário selecionado
         cursor.execute('''
