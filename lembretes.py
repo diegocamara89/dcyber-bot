@@ -161,7 +161,7 @@ async def finalizar_lembrete(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 f"⏰ *Hora:* {hora.strftime('%H:%M')}"
             )
             
-            if context.user_data.get('destinatarios'):
+            if destinatarios:
                 texto += "\n\n👥 *Destinatários:*"
                 for dest_id in destinatarios:
                     user_info = get_user_display_info(user_id=int(dest_id))
@@ -173,10 +173,24 @@ async def finalizar_lembrete(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=reply_markup
             )
-        
-        context.user_data.clear()
-        return lembrete_id
-        
+            context.user_data.clear()
+            return lembrete_id
+            
+        else:
+            keyboard = [
+                [InlineKeyboardButton("🔄 Tentar Novamente", callback_data='lembrete_novo')],
+                [InlineKeyboardButton("🔙 Menu Lembretes", callback_data='lembretes')]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await update.callback_query.message.edit_text(
+                "❌ *Erro ao criar lembrete*\n\n"
+                "Ocorreu um erro ao salvar o lembrete. Por favor, tente novamente.",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup
+            )
+            context.user_data.clear()
+            return None
     except Exception as e:
         print(f"Erro ao finalizar lembrete: {e}")
         keyboard = [
@@ -187,49 +201,12 @@ async def finalizar_lembrete(update: Update, context: ContextTypes.DEFAULT_TYPE)
         
         await update.callback_query.message.edit_text(
             "❌ *Erro ao criar lembrete*\n\n"
-            "Ocorreu um erro inesperado. Por favor, tente novamente.",
+            f"Erro: {str(e)}",
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=reply_markup
         )
+        context.user_data.clear()
         return None
-
-async def listar_lembretes(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Lista os lembretes do usuário"""
-    user_id = update.callback_query.from_user.id
-    lembretes = consultar_lembretes_db(user_id)
-    
-    if not lembretes:
-        keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data='lembretes')]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.callback_query.edit_message_text(
-            text="📝 *Meus Lembretes*\n\n"
-                 "Você não possui lembretes cadastrados.",
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
-        )
-        return
-
-    texto = "📋 *Meus Lembretes:*\n\n"
-    keyboard = []
-    
-    for lembrete in lembretes:
-        id_lembrete, titulo, data, hora, destinatarios = lembrete
-        texto += f"📌 *{titulo}*\n"
-        texto += f"📅 {data} às {hora}\n"
-        texto += f"👥 Para: {destinatarios}\n\n"
-        keyboard.append([InlineKeyboardButton(
-            f"❌ Apagar: {titulo}",
-            callback_data=f'lembrete_apagar_{id_lembrete}'
-        )])
-    
-    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data='lembretes')])
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await update.callback_query.edit_message_text(
-        text=texto,
-        reply_markup=reply_markup,
-        parse_mode=ParseMode.MARKDOWN
-    )
 
 def adicionar_lembrete_db(user_id: int, titulo: str, data: str, hora: str, destinatarios: list):
     """Adiciona um novo lembrete no banco de dados"""
