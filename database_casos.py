@@ -3,6 +3,7 @@ from database_estatisticas import incrementar_contador
 from database import get_db_connection
 
 def criar_tabela_casos():
+    """Cria a tabela de casos"""
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -30,11 +31,6 @@ def criar_tabela_casos():
                 UNIQUE(caso_id, user_id)
             )
         ''')
-        
-        conn.commit()
-    finally:
-        cursor.close()
-        conn.close()
         
         conn.commit()
     except Exception as e:
