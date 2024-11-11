@@ -1,7 +1,12 @@
 # lembretes.py
+import pytz
+from datetime import datetime, timedelta
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
+
+# Definição do timezone
+TIMEZONE = pytz.timezone('America/Sao_Paulo')
 from datetime import datetime, timedelta
 from database import (
     get_db_connection,
@@ -367,16 +372,20 @@ async def handle_lembretes_callback(update: Update, context: ContextTypes.DEFAUL
             )
 
 @user_approved
+@user_approved
 async def handle_lembrete_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler para mensagens durante criação de lembretes"""
     if not context.user_data.get('criando_lembrete'):
         return
 
     estado = context.user_data.get('estado_lembrete')
     texto = update.message.text.strip()
-    timezone = pytz.timezone('America/Sao_Paulo')
-    agora = datetime.now(timezone)
 
     if estado == TITULO:
+        if len(texto) > 100:  # Limite de caracteres
+            await update.message.reply_text("❌ O título é muito longo. Use no máximo 100 caracteres.")
+            return
+            
         context.user_data['titulo'] = texto
         context.user_data['estado_lembrete'] = DATA
         await update.message.reply_text(
