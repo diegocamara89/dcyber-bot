@@ -119,11 +119,9 @@ def get_estatisticas_pessoais(user_id: int):
         
         # Últimos acessos
         cursor.execute('''
-            SELECT data_hora AT TIME ZONE 'America/Sao_Paulo'
-            FROM acoes_usuarios
+            SELECT MAX(data_acesso) AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo'
+            FROM user_acessos
             WHERE user_id = %s
-            ORDER BY data_hora DESC
-            LIMIT 1
         ''', (user_id,))
         ultimo_acesso = cursor.fetchone()
         stats['ultimo_acesso'] = ultimo_acesso[0] if ultimo_acesso else None
