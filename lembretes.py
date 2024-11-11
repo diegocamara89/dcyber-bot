@@ -419,24 +419,25 @@ async def handle_lembrete_message(update: Update, context: ContextTypes.DEFAULT_
             await update.message.reply_text("❌ Data inválida! Use o formato DD/MM/YYYY")
     
     elif estado == HORA:
-        try:
-            hora = datetime.strptime(texto, "%H:%M").time()
-            data = context.user_data['data']
-            data_hora = datetime.combine(data.date(), hora)
-            data_hora = timezone.localize(data_hora)
-            
-            if data_hora < agora:
-                await update.message.reply_text(
-                    "❌ Não é possível criar lembretes para datas passadas!",
-                    reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("🔙 Voltar", callback_data='lembretes')
-                    ]])
-                )
-                context.user_data.clear()
-                return
-            
-            context.user_data['hora'] = hora
-            context.user_data['estado_lembrete'] = DESTINATARIOS
+    try:
+        hora = datetime.strptime(texto, "%H:%M").time()
+        data = context.user_data['data']
+        agora = datetime.now(TIMEZONE)  # Adicione esta linha
+        data_hora = datetime.combine(data.date(), hora)
+        data_hora = TIMEZONE.localize(data_hora)  # Use TIMEZONE em vez de timezone
+        
+        if data_hora < agora:
+            await update.message.reply_text(
+                "❌ Não é possível criar lembretes para datas passadas!",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("🔙 Voltar", callback_data='lembretes')
+                ]])
+            )
+            context.user_data.clear()
+            return
+        
+        context.user_data['hora'] = hora
+        context.user_data['estado_lembrete'] = DESTINATARIOS
             
             keyboard = [
                 [InlineKeyboardButton("👤 Apenas eu", callback_data='lembrete_dest_eu')],
