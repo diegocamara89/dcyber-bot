@@ -64,13 +64,14 @@ async def menu_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def gerenciar_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Lista usuários com opções de gerenciamento"""
+    """Menu completo de gerenciamento de usuários"""
+    print("Início de gerenciar_usuarios")
     usuarios = listar_usuarios()
-    texto = "👥 *Lista de Usuários*\n\n"
+    texto = "👥 *Usuários do Sistema:*\n\n"
     keyboard = []
     
     for user in usuarios:
-        user_id, nome, username, nivel, ativo = user
+        user_id, nome, username, nivel, data_cadastro = user
         nivel_emoji = {
             'admin': '👑',
             'dpc': '🔰',
@@ -78,30 +79,36 @@ async def gerenciar_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE)
             'pendente': '⏳'
         }.get(nivel, '❓')
         
-        status_emoji = '✅' if ativo else '❌'
-        
+        # Adiciona as informações do usuário
         texto += f"{nivel_emoji} *{nome}*\n"
         texto += f"├ ID: `{user_id}`\n"
         texto += f"├ Username: @{username if username else 'Não informado'}\n"
-        texto += f"├ Nível: {nivel}\n"
-        texto += f"└ Status: {status_emoji} {'Ativo' if ativo else 'Inativo'}\n\n"
+        texto += f"├ Nível: {nivel}\n\n"
         
-        # Botão para gerenciar cada usuário
-        keyboard.append([
-            InlineKeyboardButton(
-                f"⚙️ Gerenciar {nome}", 
-                callback_data=f'gerenciar_usuario_{user_id}'
-            )
-        ])
+        # Adiciona botão para gerenciar cada usuário
+        if nivel != 'admin':  # Não permite gerenciar administradores
+            keyboard.append([
+                InlineKeyboardButton(
+                    f"⚙️ Gerenciar {nome}", 
+                    callback_data=f'gerenciar_usuario_{user_id}'
+                )
+            ])
     
+    # Botões de navegação
+    keyboard.append([InlineKeyboardButton("✅ Aprovar Usuários", callback_data='admin_aprovar_usuarios')])
+    keyboard.append([InlineKeyboardButton("🔰 Definir DPC", callback_data='definir_dpc')])
     keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data='admin_usuarios')])
+    
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    await update.callback_query.edit_message_text(
-        texto,
-        reply_markup=reply_markup,
-        parse_mode='Markdown'
-    )
+    try:
+        await update.callback_query.edit_message_text(
+            text=texto,
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
+        )
+    except Exception as e:
+        print(f"Erro ao gerenciar usuários: {e}")
 
 async def menu_gerenciar_usuario_individual(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Menu de gerenciamento de um usuário específico"""
