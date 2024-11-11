@@ -504,9 +504,8 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
             if desativar_usuario(user_id):
                 try:
                     # Notifica o usuário que foi desativado
-                await context.bot.send_message(chat_id=user_id, text="❌ Seu acesso foi revogado. Você precisará solicitar nova aprovação para usar o bot.")
-                except Exception as e:
-                    print(f"Erro ao notificar usuário desativado: {e}")
+                     await context.bot.send_message(chat_id=user_id, text="❌ Seu acesso foi revogado. Você precisará solicitar nova aprovação para usar o bot.")
+                except Exception as e: print(f"Erro ao notificar usuário desativado: {e}")
                 
                 await query.answer("✅ Usuário desativado com sucesso")
                 await menu_usuarios(update, context)
