@@ -154,24 +154,22 @@ async def finalizar_lembrete(update: Update, context: ContextTypes.DEFAULT_TYPE)
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            await update.callback_query.message.edit_text(
+            texto = (
                 "✅ *Lembrete criado com sucesso!*\n\n"
                 f"📝 *Título:* {titulo}\n"
                 f"📅 *Data:* {data.strftime('%d/%m/%Y')}\n"
-                f"⏰ *Hora:* {hora.strftime('%H:%M')}",
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=reply_markup
+                f"⏰ *Hora:* {hora.strftime('%H:%M')}"
             )
-        else:
-            keyboard = [
-                [InlineKeyboardButton("🔄 Tentar Novamente", callback_data='lembrete_novo')],
-                [InlineKeyboardButton("🔙 Menu Lembretes", callback_data='lembretes')]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            if context.user_data.get('destinatarios'):
+                texto += "\n\n👥 *Destinatários:*"
+                for dest_id in destinatarios:
+                    user_info = get_user_display_info(user_id=int(dest_id))
+                    if user_info:
+                        texto += f"\n• {user_info['display_name']}"
             
             await update.callback_query.message.edit_text(
-                "❌ *Erro ao criar lembrete*\n\n"
-                "Ocorreu um erro ao salvar o lembrete. Por favor, tente novamente.",
+                texto,
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=reply_markup
             )
