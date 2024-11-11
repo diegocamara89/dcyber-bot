@@ -374,12 +374,12 @@ async def handle_mensagem(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     print("🚀 Iniciando o bot...")
-
-    # Configurar timezone
+    
+    # Configurar timezone no PostgreSQL
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SET timezone TO 'America/Sao_Paulo'")
+        cursor.execute("SET TIME ZONE 'America/Sao_Paulo'")
         conn.commit()
     finally:
         cursor.close()
