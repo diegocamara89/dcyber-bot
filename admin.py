@@ -526,6 +526,11 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def gerar_relatorio(update: Update, context: ContextTypes.DEFAULT_TYPE, inicio, fim, periodo):
     """Gera relatório detalhado de atividades"""
+    # Ajustar timezone das datas de início e fim
+    timezone = pytz.timezone('America/Sao_Paulo')
+    inicio = timezone.localize(inicio)
+    fim = timezone.localize(fim)
+    
     acessos, assinaturas = obter_relatorio_atividades(inicio, fim)
     
     texto = f"📊 *Relatório de Atividades - {periodo}*\n\n"
@@ -541,6 +546,9 @@ async def gerar_relatorio(update: Update, context: ContextTypes.DEFAULT_TYPE, in
             total_acessos += total
             usuarios_ativos.add(nome)
             texto += f"• {nome} ({nivel})\n"
+            # Converter horários para timezone local
+            primeiro_acesso = primeiro_acesso.astimezone(timezone)
+            ultimo_acesso = ultimo_acesso.astimezone(timezone)
             texto += f"  └ Primeiro acesso: {primeiro_acesso.strftime('%H:%M')}\n"
             texto += f"  └ Último acesso: {ultimo_acesso.strftime('%H:%M')}\n"
             texto += f"  └ Total de acessos: {total}\n\n"
