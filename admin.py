@@ -505,34 +505,35 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
         elif query.data == 'menu_relatorios':
             await menu_relatorios(update, context)
         
-        elif query.data == 'admin_gerenciar_usuarios':
-            await gerenciar_usuarios(update, context)
-        
-        elif query.data.startswith('gerenciar_usuario_'):
-            user_id = int(query.data.split('_')[-1])
-            user_info = get_user_display_info(user_id)
+       elif query.data == 'admin_gerenciar_usuarios':
+            usuarios = listar_usuarios()
+            texto = "👥 *Lista de Usuários*\n\n"
+            keyboard = []
             
-            if not user_info:
-                await query.answer("❌ Usuário não encontrado")
-                return
+            for user in usuarios:
+                user_id, nome, username, nivel, data_cadastro = user
+                if nivel != 'admin':  # Não permite gerenciar administradores
+                    nivel_emoji = {
+                        'dpc': '🔰',
+                        'user': '👤',
+                        'pendente': '⏳'
+                    }.get(nivel, '❓')
+                    
+                    texto += f"{nivel_emoji} *{nome}*\n"
+                    texto += f"├ ID: `{user_id}`\n"
+                    texto += f"├ Username: @{username if username else 'Não informado'}\n"
+                    texto += f"├ Nível: {nivel}\n\n"
+                    
+                    keyboard.append([
+                        InlineKeyboardButton(
+                            f"⚙️ Gerenciar {nome}", 
+                            callback_data=f'gerenciar_usuario_{user_id}'
+                        )
+                    ])
             
-            texto = f"⚙️ *Gerenciar Usuário*\n\n"
-            texto += f"👤 Nome: {user_info['nome_completo']}\n"
-            texto += f"🆔 ID: `{user_info['user_id']}`\n"
-            texto += f"📝 Username: @{user_info['username'] if user_info['username'] else 'Não informado'}\n"
-            texto += f"🔰 Nível: {user_info['nivel']}\n"
-            texto += f"📊 Status: {'✅ Ativo' if user_info['ativo'] else '❌ Inativo'}\n"
-            
-            keyboard = [
-                [InlineKeyboardButton("👑 Admin", callback_data=f'set_nivel_admin_{user_id}'),
-                 InlineKeyboardButton("🔰 DPC", callback_data=f'set_nivel_dpc_{user_id}')],
-                [InlineKeyboardButton("👤 Usuário", callback_data=f'set_nivel_user_{user_id}')],
-                [InlineKeyboardButton("✅ Ativar", callback_data=f'set_status_ativo_{user_id}'),
-                 InlineKeyboardButton("❌ Desativar", callback_data=f'set_status_inativo_{user_id}')],
-                [InlineKeyboardButton("🔙 Voltar", callback_data='listar_usuarios')]
-            ]
-            
+            keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data='admin_usuarios')])
             reply_markup = InlineKeyboardMarkup(keyboard)
+            
             await query.edit_message_text(
                 text=texto,
                 reply_markup=reply_markup,
