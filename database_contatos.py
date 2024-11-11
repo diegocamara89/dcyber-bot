@@ -1,5 +1,5 @@
-# database_contatos.py
 from database_manager import db
+from database_estatisticas import incrementar_contador
 
 def criar_tabela_contatos():
     """Cria tabela de contatos"""
@@ -22,6 +22,7 @@ def criar_tabela_contatos():
         cursor.execute(query)
         conn.commit()
     finally:
+        cursor.close()
         conn.close()
 
 def adicionar_contato_db(user_id, nome, contato, observacoes=None):
@@ -32,13 +33,18 @@ def adicionar_contato_db(user_id, nome, contato, observacoes=None):
         cursor.execute('''
             INSERT INTO contatos (user_id, nome, contato, observacoes)
             VALUES (%s, %s, %s, %s)
+            RETURNING id
         ''', (user_id, nome, contato, observacoes))
+        result = cursor.fetchone()
         conn.commit()
-        return cursor.lastrowid  # Retorna o ID do contato inserido
+        if result:
+            incrementar_contador('contatos')
+        return result[0] if result else None
     except Exception as e:
         print(f"Erro ao adicionar contato: {e}")
         return None
     finally:
+        cursor.close()
         conn.close()
 
 def consultar_contatos_db(user_id=None, busca=None):
@@ -59,7 +65,7 @@ def consultar_contatos_db(user_id=None, busca=None):
             params.append(user_id)
         
         if busca:
-            query += ' AND (nome LIKE %s OR contato LIKE %s OR observacoes LIKE %s)'
+            query += ' AND (nome ILIKE %s OR contato ILIKE %s OR observacoes ILIKE %s)'
             busca_param = f'%{busca}%'
             params.extend([busca_param, busca_param, busca_param])
         
@@ -68,6 +74,7 @@ def consultar_contatos_db(user_id=None, busca=None):
         cursor.execute(query, params)
         return cursor.fetchall()
     finally:
+        cursor.close()
         conn.close()
 
 def pesquisar_contatos_db(user_id: int, termo: str):
@@ -80,11 +87,16 @@ def pesquisar_contatos_db(user_id: int, termo: str):
         FROM contatos
         WHERE user_id = %s 
         AND ativo = TRUE
-        AND (nome LIKE %s OR contato LIKE %s OR observacoes LIKE %s)
+        AND (
+            nome ILIKE %s 
+            OR contato ILIKE %s 
+            OR observacoes ILIKE %s
+        )
         ORDER BY nome ASC
         ''', (user_id, f'%{termo}%', f'%{termo}%', f'%{termo}%'))
         return cursor.fetchall()
     finally:
+        cursor.close()
         conn.close()
 
 def atualizar_contato_db(contato_id, campos):
@@ -95,18 +107,21 @@ def atualizar_contato_db(contato_id, campos):
             UPDATE contatos 
             SET {set_clause}
             WHERE id = %s
+            RETURNING id
         '''
         params = list(campos.values()) + [contato_id]
         
         conn = db.get_connection()
         cursor = conn.cursor()
         cursor.execute(query, params)
+        result = cursor.fetchone()
         conn.commit()
-        return True
+        return bool(result)
     except Exception as e:
         print(f"Erro ao atualizar contato: {e}")
         return False
     finally:
+        cursor.close()
         conn.close()
 
 def apagar_contato_db(contato_id):
@@ -118,11 +133,14 @@ def apagar_contato_db(contato_id):
             UPDATE contatos 
             SET ativo = FALSE 
             WHERE id = %s
+            RETURNING id
         ''', (contato_id,))
+        result = cursor.fetchone()
         conn.commit()
-        return True
+        return bool(result)
     except Exception as e:
         print(f"Erro ao apagar contato: {e}")
         return False
     finally:
+        cursor.close()
         conn.close()
