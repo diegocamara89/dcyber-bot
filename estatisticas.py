@@ -1,11 +1,9 @@
-import sqlite3
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from database_estatisticas import get_db_connection, criar_tabela_estatisticas
 from decorators import user_approved, admin_required
 from datetime import datetime, timedelta
-
 
 @user_approved
 async def menu_estatisticas(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -58,7 +56,7 @@ def get_estatisticas_gerais():
             cursor.execute('''
                 SELECT COUNT(DISTINCT user_id) 
                 FROM user_acessos 
-                WHERE DATE(data_acesso) = ?
+                WHERE DATE(data_acesso) = %s
             ''', (hoje,))
             result = cursor.fetchone()
             stats['usuarios_ativos_hoje'] = result[0] if result else 0
@@ -95,6 +93,7 @@ def get_estatisticas_gerais():
             'casos_ativos': 0
         }
     finally:
+        cursor.close()
         conn.close()
 
 def get_estatisticas_pessoais(user_id: int):
@@ -109,7 +108,7 @@ def get_estatisticas_pessoais(user_id: int):
             cursor.execute('''
                 SELECT COUNT(*) 
                 FROM acoes_usuarios 
-                WHERE user_id = ? AND tipo_acao = ?
+                WHERE user_id = %s AND tipo_acao = %s
             ''', (user_id, acao))
             stats[acao] = cursor.fetchone()[0]
         
@@ -117,7 +116,7 @@ def get_estatisticas_pessoais(user_id: int):
         cursor.execute('''
             SELECT data_acesso
             FROM user_acessos
-            WHERE user_id = ?
+            WHERE user_id = %s
             ORDER BY data_acesso DESC
             LIMIT 1
         ''', (user_id,))
@@ -128,12 +127,13 @@ def get_estatisticas_pessoais(user_id: int):
         cursor.execute('''
             SELECT COUNT(*)
             FROM user_acessos
-            WHERE user_id = ?
+            WHERE user_id = %s
         ''', (user_id,))
         stats['total_acessos'] = cursor.fetchone()[0]
         
         return stats
     finally:
+        cursor.close()
         conn.close()
 
 @user_approved
@@ -186,8 +186,7 @@ async def mostrar_estatisticas_pessoais(update: Update, context: ContextTypes.DE
     texto += "*🕐 Acessos*\n"
     texto += f"• Total de acessos: `{stats['total_acessos']}`\n"
     if stats['ultimo_acesso']:
-        ultimo_acesso = datetime.strptime(stats['ultimo_acesso'], '%Y-%m-%d %H:%M:%S')
-        texto += f"• Último acesso: `{ultimo_acesso.strftime('%d/%m/%Y %H:%M')}`"
+        texto += f"• Último acesso: `{stats['ultimo_acesso'].strftime('%d/%m/%Y %H:%M')}`"
 
     keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data='estatisticas')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
