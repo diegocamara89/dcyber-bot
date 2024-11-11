@@ -94,10 +94,15 @@ def incrementar_contador(tipo: str, quantidade: int = 1):
 def registrar_acao_usuario(user_id: int, tipo_acao: str):
     max_attempts = 3
     attempt = 0
+    timezone = pytz.timezone('America/Sao_Paulo')
+    
     while attempt < max_attempts:
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
+            
+            # Configurar timezone
+            cursor.execute("SET timezone TO 'America/Sao_Paulo'")
             
             # Verificar se é a primeira ação do usuário
             cursor.execute('''
@@ -107,12 +112,13 @@ def registrar_acao_usuario(user_id: int, tipo_acao: str):
             if cursor.fetchone()[0] == 0:
                 incrementar_contador('usuarios')
             
-            # Registrar a ação
+            # Registrar a ação com timezone
+            agora = datetime.now(timezone)
             cursor.execute('''
-            INSERT INTO acoes_usuarios (user_id, tipo_acao)
-            VALUES (%s, %s)
+            INSERT INTO acoes_usuarios (user_id, tipo_acao, data_hora)
+            VALUES (%s, %s, %s)
             RETURNING id
-            ''', (user_id, tipo_acao))
+            ''', (user_id, tipo_acao, agora))
             
             result = cursor.fetchone()
             conn.commit()
@@ -129,6 +135,8 @@ def registrar_acao_usuario(user_id: int, tipo_acao: str):
                 conn.close()
             except:
                 pass
+
+    return False
 
 def obter_estatisticas():
     """Obtém estatísticas gerais do sistema"""
