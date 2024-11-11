@@ -39,6 +39,8 @@ from database_estatisticas import (  # Adicione esta importação
 # Feature handlers
 from casos import menu_casos, handle_casos_callback, handle_caso_message
 from contatos import menu_contatos, handle_contatos_callback, handle_contato_message
+from database_contatos import criar_tabela_contatos
+from database_casos import criar_tabela_casos
 from lembretes import (
     menu_lembretes, 
     handle_lembretes_callback, 
