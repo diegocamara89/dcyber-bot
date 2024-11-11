@@ -2,24 +2,22 @@ from database_manager import db
 from database_estatisticas import incrementar_contador
 
 def criar_tabela_contatos():
-    """Cria tabela de contatos"""
-    query = '''
-    CREATE TABLE IF NOT EXISTS contatos (
-        id SERIAL PRIMARY KEY,
-        user_id BIGINT NOT NULL,
-        nome TEXT NOT NULL,
-        contato TEXT,
-        observacoes TEXT,
-        ativo BOOLEAN DEFAULT TRUE,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES usuarios (user_id)
-    )
-    '''
-    
-    conn = db.get_connection()
+    conn = get_db_connection()
     cursor = conn.cursor()
+    
     try:
-        cursor.execute(query)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS contatos (
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL,
+                nome TEXT NOT NULL,
+                contato TEXT NOT NULL,
+                observacoes TEXT,
+                ativo BOOLEAN DEFAULT TRUE,
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES usuarios (user_id)
+            )
+        ''')
         conn.commit()
     finally:
         cursor.close()
