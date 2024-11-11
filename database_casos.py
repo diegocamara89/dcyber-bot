@@ -1,26 +1,25 @@
 from database_manager import db
 from database_estatisticas import incrementar_contador
+from database import get_db_connection
 
 def criar_tabela_casos():
-    """Cria a tabela de casos"""
-    conn = db.get_connection()
+    conn = get_db_connection()
     cursor = conn.cursor()
+    
     try:
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS casos (
                 id SERIAL PRIMARY KEY,
-                criador_id BIGINT NOT NULL,
+                user_id BIGINT NOT NULL,
                 titulo TEXT NOT NULL,
                 descricao TEXT,
-                observacoes TEXT,
-                status TEXT DEFAULT 'Aberto',
+                status TEXT DEFAULT 'Em andamento',
                 ativo BOOLEAN DEFAULT TRUE,
                 criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (criador_id) REFERENCES usuarios (user_id)
+                FOREIGN KEY (user_id) REFERENCES usuarios (user_id)
             )
         ''')
         
-        # Tabela para responsáveis dos casos
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS caso_responsaveis (
                 id SERIAL PRIMARY KEY,
@@ -31,6 +30,11 @@ def criar_tabela_casos():
                 UNIQUE(caso_id, user_id)
             )
         ''')
+        
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
         
         conn.commit()
     except Exception as e:
