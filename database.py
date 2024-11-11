@@ -272,12 +272,16 @@ def gerar_sequencia():
 
 # Funções de verificação
 def is_admin(user_id: int) -> bool:
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    """Verifica se o usuário é admin"""
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
         cursor.execute('SELECT nivel FROM usuarios WHERE user_id = %s', (user_id,))
         result = cursor.fetchone()
         return result[0] == 'admin' if result else False
+    except Exception as e:
+        print(f"Erro ao verificar admin: {e}")
+        return False
     finally:
         cursor.close()
         conn.close()
