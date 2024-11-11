@@ -63,7 +63,6 @@ def adicionar_caso_db(user_id: int, titulo: str, descricao: str, observacoes: st
         conn.close()
 
 def consultar_casos_db():
-    """Consulta casos ativos"""
     conn = db.get_connection()
     cursor = conn.cursor()
     try:
@@ -71,23 +70,17 @@ def consultar_casos_db():
             SELECT 
                 c.id,
                 c.titulo,
-                c.observacoes,
+                c.descricao,
                 c.status,
-                string_agg(
-                    CASE 
-                        WHEN u.nome LIKE %s THEN split_part(u.nome, ' ', 1)
-                        ELSE u.nome
-                    END,
-                    ', '
-                ) as responsaveis,
+                string_agg(u.nome, ', ') as responsaveis,
                 c.criado_em
             FROM casos c
             LEFT JOIN caso_responsaveis cr ON c.id = cr.caso_id
             LEFT JOIN usuarios u ON cr.user_id = u.user_id
             WHERE c.ativo = TRUE
-            GROUP BY c.id
+            GROUP BY c.id, c.titulo, c.descricao, c.status, c.criado_em
             ORDER BY c.criado_em DESC
-        ''', ('% %',))
+        ''')
         return cursor.fetchall()
     finally:
         cursor.close()
