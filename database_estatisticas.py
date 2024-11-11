@@ -93,51 +93,37 @@ def incrementar_contador(tipo: str, quantidade: int = 1):
                 pass
 
 def registrar_acao_usuario(user_id: int, tipo_acao: str):
-    max_attempts = 3
-    attempt = 0
-    timezone = pytz.timezone('America/Sao_Paulo')
-    
-    while attempt < max_attempts:
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            
-            # Configurar timezone
-            cursor.execute("SET timezone TO 'America/Sao_Paulo'")
-            
-            # Verificar se é a primeira ação do usuário
-            cursor.execute('''
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Configurar timezone
+        cursor.execute("SET TIME ZONE 'America/Sao_Paulo'")
+        
+        # Verificar se é a primeira ação do usuário
+        cursor.execute('''
             SELECT COUNT(*) FROM acoes_usuarios WHERE user_id = %s
-            ''', (user_id,))
-            
-            if cursor.fetchone()[0] == 0:
-                incrementar_contador('usuarios')
-            
-            # Registrar a ação com timezone
-            agora = datetime.now(timezone)
-            cursor.execute('''
+        ''', (user_id,))
+        
+        if cursor.fetchone()[0] == 0:
+            incrementar_contador('usuarios')
+        
+        # Registrar a ação com timezone correto
+        now = datetime.now(TIMEZONE)
+        cursor.execute('''
             INSERT INTO acoes_usuarios (user_id, tipo_acao, data_hora)
             VALUES (%s, %s, %s)
             RETURNING id
-            ''', (user_id, tipo_acao, agora))
-            
-            result = cursor.fetchone()
-            conn.commit()
-            return bool(result)
-        except Exception as e:
-            attempt += 1
-            if attempt == max_attempts:
-                print(f"Erro ao registrar ação após {max_attempts} tentativas: {e}")
-                return False
-            time.sleep(1)
-        finally:
-            try:
-                cursor.close()
-                conn.close()
-            except:
-                pass
-
-    return False
+        ''', (user_id, tipo_acao, now))
+        
+        result = cursor.fetchone()
+        conn.commit()
+        return bool(result)
+    except Exception as e:
+        print(f"Erro ao registrar ação: {e}")
+        return False
+    finally:
+        cursor.close()
+        conn.close()
 
 def obter_estatisticas():
     """Obtém estatísticas gerais do sistema"""
