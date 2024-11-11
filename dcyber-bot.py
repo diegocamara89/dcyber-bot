@@ -378,6 +378,7 @@ def main():
     criar_tabela_acessos()
     criar_todas_tabelas()
     criar_tabela_estatisticas()
+    criar_tabela_contatos()
     
     # Criar tabelas específicas
     conn = get_db_connection()
