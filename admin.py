@@ -506,33 +506,34 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
                 await menu_usuarios(update, context)
             else:
                 await query.answer("❌ Erro ao desativar usuário")
-       elif query.data == 'relatorio_hoje':
-        hoje = datetime.now()
-        inicio = hoje.replace(hour=0, minute=0, second=0)
-        fim = hoje.replace(hour=23, minute=59, second=59)
-        await gerar_relatorio(update, context, inicio, fim, "Hoje")
 
-    elif query.data == 'relatorio_semana':
-        hoje = datetime.now()
-        inicio = hoje - timedelta(days=7)
-        fim = hoje
-        await gerar_relatorio(update, context, inicio, fim, "Últimos 7 dias")
+        elif query.data == 'relatorio_hoje':
+            hoje = datetime.now()
+            inicio = hoje.replace(hour=0, minute=0, second=0)
+            fim = hoje.replace(hour=23, minute=59, second=59)
+            await gerar_relatorio(update, context, inicio, fim, "Hoje")
 
-    elif query.data == 'relatorio_mes':
-        hoje = datetime.now()
-        inicio = hoje.replace(day=1)
-        fim = hoje
-        await gerar_relatorio(update, context, inicio, fim, "Este mês")
+        elif query.data == 'relatorio_semana':
+            hoje = datetime.now()
+            inicio = hoje - timedelta(days=7)
+            fim = hoje
+            await gerar_relatorio(update, context, inicio, fim, "Últimos 7 dias")
 
-    elif query.data == 'relatorio_mes_anterior':
-        hoje = datetime.now()
-        inicio = (hoje.replace(day=1) - timedelta(days=1)).replace(day=1)
-        fim = hoje.replace(day=1) - timedelta(days=1)
-        await gerar_relatorio(update, context, inicio, fim, "Mês anterior")
+        elif query.data == 'relatorio_mes':
+            hoje = datetime.now()
+            inicio = hoje.replace(day=1)
+            fim = hoje
+            await gerar_relatorio(update, context, inicio, fim, "Este mês")
 
-except Exception as e:
-    print(f"Erro no callback administrativo: {e}")
-    await query.answer("❌ Erro ao processar comando")
+        elif query.data == 'relatorio_mes_anterior':
+            hoje = datetime.now()
+            inicio = (hoje.replace(day=1) - timedelta(days=1)).replace(day=1)
+            fim = hoje.replace(day=1) - timedelta(days=1)
+            await gerar_relatorio(update, context, inicio, fim, "Mês anterior")
+
+    except Exception as e:
+        print(f"Erro no callback administrativo: {e}")
+        await query.answer("❌ Erro ao processar comando")
 
 
 async def gerar_relatorio(update: Update, context: ContextTypes.DEFAULT_TYPE, inicio, fim, periodo):
