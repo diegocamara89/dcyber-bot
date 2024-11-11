@@ -2,7 +2,7 @@ from database_manager import db
 from database_estatisticas import incrementar_contador
 
 def criar_tabela_contatos():
-    conn = get_db_connection()
+    conn = db.get_connection()
     cursor = conn.cursor()
     
     try:
