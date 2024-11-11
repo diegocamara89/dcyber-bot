@@ -499,10 +499,16 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
             else:
                 await query.answer("❌ Erro ao ativar usuário")
         
-        elif query.data.startswith('user_desativar_'):
-            user_id = int(query.data.replace('user_desativar_', ''))
+        elif query.data.startswith('set_status_inativo_'):
+            user_id = int(query.data.split('_')[-1])
             if desativar_usuario(user_id):
-                await query.answer("✅ Usuário desativado")
+                try:
+                    # Notifica o usuário que foi desativado
+                await context.bot.send_message(chat_id=user_id, text="❌ Seu acesso foi revogado. Você precisará solicitar nova aprovação para usar o bot.")
+                except Exception as e:
+                    print(f"Erro ao notificar usuário desativado: {e}")
+                
+                await query.answer("✅ Usuário desativado com sucesso")
                 await menu_usuarios(update, context)
             else:
                 await query.answer("❌ Erro ao desativar usuário")
