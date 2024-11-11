@@ -1,34 +1,44 @@
+from functools import wraps
 from telegram import Update
-from telegram.ext import ContextTypes
-from auth import is_admin, is_user_approved
+from telegram.constants import ParseMode
+from auth import is_admin, is_user_active
 
 def admin_required(func):
-    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
+    @wraps(func)
+    async def wrapper(update: Update, context, *args, **kwargs):
         user_id = update.effective_user.id
-        if not is_admin(user_id):
-            return
-        return await func(update, context, *args, **kwargs)
+        if is_admin(user_id):
+            return await func(update, context, *args, **kwargs)
+        else:
+            if update.callback_query:
+                await update.callback_query.answer("❌ Acesso negado")
+            else:
+                await update.message.reply_text(
+                    "❌ Apenas administradores podem usar este comando.",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            return None
     return wrapper
 
 def user_approved(func):
-    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
+    @wraps(func)
+    async def wrapper(update: Update, context, *args, **kwargs):
         user_id = update.effective_user.id
-        
-        # Se for admin, permite acesso
-        if is_admin(user_id):
+        if is_admin(user_id) or is_user_active(user_id):
             return await func(update, context, *args, **kwargs)
-        
-        # Verifica se usuário está ativo
-        if not is_user_approved(user_id):
-            if hasattr(update, 'callback_query'):
-                await update.callback_query.answer("⚠️ Aguardando aprovação do administrador")
-                return
+        else:
+            if update.callback_query:
+                await update.callback_query.answer("❌ Acesso pendente")
+                await update.callback_query.message.reply_text(
+                    "⚠️ Seu acesso ainda está pendente de aprovação.\n"
+                    "Por favor, aguarde a aprovação do administrador.",
+                    parse_mode=ParseMode.MARKDOWN
+                )
             else:
                 await update.message.reply_text(
-                    "⚠️ Seu acesso ainda não foi aprovado.\n"
-                    "Por favor, aguarde a aprovação do administrador."
+                    "⚠️ Seu acesso ainda está pendente de aprovação.\n"
+                    "Por favor, aguarde a aprovação do administrador.",
+                    parse_mode=ParseMode.MARKDOWN
                 )
-                return
-        
-        return await func(update, context, *args, **kwargs)
+            return None
     return wrapper
