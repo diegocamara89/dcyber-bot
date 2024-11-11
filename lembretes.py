@@ -250,18 +250,6 @@ def adicionar_lembrete_db(user_id: int, titulo: str, data: str, hora: str, desti
     finally:
         cursor.close()
         conn.close()
-        
-        conn.commit()
-        incrementar_contador('lembretes')
-        registrar_acao_usuario(user_id, 'novo_lembrete')
-        return lembrete_id
-    except Exception as e:
-        print(f"Erro ao adicionar lembrete: {e}")
-        conn.rollback()
-        return None
-    finally:
-        cursor.close()
-        conn.close()
 
 def consultar_lembretes_db(user_id: int):
     """Consulta os lembretes do usuário"""
