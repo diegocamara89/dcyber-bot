@@ -593,52 +593,50 @@ def adicionar_usuario(user_id: int, nome: str, username: str = None, nivel: str 
         conn.close()
 
 def desativar_usuario(user_id: int) -> bool:
-    """Desativa um usuário"""
+    """Desativa completamente um usuário"""
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        # Reseta o usuário para estado pendente e inativo
         cursor.execute('''
             UPDATE usuarios 
-            SET ativo = FALSE 
+            SET ativo = FALSE,
+                nivel = 'pendente',
+                data_cadastro = CURRENT_TIMESTAMP
             WHERE user_id = %s
             RETURNING user_id
         ''', (user_id,))
         
-        result = cursor.fetchone()
-        conn.commit()
-        return bool(result)
+        # Remove permissões e acessos ativos
+        if cursor.fetchone():
+            # Desativa lembretes criados pelo usuário
+            cursor.execute('''
+                UPDATE lembretes 
+                SET ativo = FALSE
+                WHERE criador_id = %s
+            ''', (user_id,))
+            
+            # Remove notificações pendentes
+            cursor.execute('''
+                DELETE FROM lembrete_destinatarios
+                WHERE user_id = %s
+                AND notificado = FALSE
+            ''', (user_id,))
+            
+            # Desativa assinaturas pendentes
+            cursor.execute('''
+                UPDATE assinaturas 
+                SET ativo = FALSE
+                WHERE user_id = %s
+            ''', (user_id,))
+            
+            conn.commit()
+            return True
+            
+        return False
     except Exception as e:
         print(f"Erro ao desativar usuário: {e}")
-        return False
-    finally:
-        cursor.close()
-        conn.close()
-
-def alterar_nivel_usuario(user_id: int, novo_nivel: str) -> bool:
-    """Altera o nível de acesso de um usuário"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        # Se estiver definindo um novo DPC, primeiro remove o DPC atual
-        if novo_nivel == 'dpc':
-            cursor.execute("UPDATE usuarios SET nivel = 'user' WHERE nivel = 'dpc'")
-
-        # Atualiza o nível do usuário selecionado
-        cursor.execute('''
-            UPDATE usuarios 
-            SET nivel = %s,
-                ativo = TRUE
-            WHERE user_id = %s
-            RETURNING user_id
-        ''', (novo_nivel, user_id))
-        
-        result = cursor.fetchone()
-        conn.commit()
-        
-        print(f"Alteração de nível - ID: {user_id}, Novo nível: {novo_nivel}, Sucesso: {bool(result)}")
-        return bool(result)
-    except Exception as e:
-        print(f"Erro ao alterar nível do usuário: {e}")
+        conn.rollback()
         return False
     finally:
         cursor.close()
