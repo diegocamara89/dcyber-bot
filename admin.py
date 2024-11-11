@@ -450,17 +450,28 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
             await menu_usuarios(update, context)
         
         elif query.data.startswith('set_nivel_'):
-            _, nivel, user_id = query.data.split('_')
-            if alterar_nivel_usuario(int(user_id), nivel):
-                await query.answer(f"✅ Nível alterado para {nivel}")
-                await query.edit_message_text(
-                    "✅ Nível alterado com sucesso!\nVoltando para a lista de usuários...",
-                    reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("🔄 Atualizar Lista", callback_data='admin_gerenciar_usuarios')
-                    ]])
-                )
-            else:
-                await query.answer("❌ Erro ao alterar nível")
+            try:
+                # Exemplo de callback: set_nivel_user_123456789
+                partes = query.data.split('_')
+                if len(partes) >= 4:
+                    nivel = partes[2]
+                    user_id = partes[3]
+                    
+                    if alterar_nivel_usuario(int(user_id), nivel):
+                        await query.answer(f"✅ Nível alterado para {nivel}")
+                        await query.edit_message_text(
+                            "✅ Nível alterado com sucesso!\nVoltando para a lista de usuários...",
+                            reply_markup=InlineKeyboardMarkup([[
+                                InlineKeyboardButton("🔄 Atualizar Lista", callback_data='admin_gerenciar_usuarios')
+                            ]])
+                        )
+                    else:
+                        await query.answer("❌ Erro ao alterar nível")
+                else:
+                    await query.answer("❌ Formato de callback inválido")
+            except Exception as e:
+                print(f"Erro ao processar alteração de nível: {e}")
+              await query.answer("❌ Erro ao processar alteração de nível")
         
         elif query.data.startswith('set_status_'):
             _, status, user_id = query.data.split('_')
