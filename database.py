@@ -419,15 +419,21 @@ def obter_relatorio_atividades(data_inicio, data_fim):
         conn.close()
 
 def registrar_acesso(user_id: int, tipo_acesso: str = 'login'):
+    timezone = pytz.timezone('America/Sao_Paulo')
     conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
+        # Configurar timezone
+        cursor.execute("SET TIME ZONE 'America/Sao_Paulo'")
+        
+        # Registrar acesso com timezone correto
+        agora = datetime.now(timezone)
         cursor.execute('''
-            INSERT INTO user_acessos (user_id, tipo_acesso)
-            VALUES (%s, %s)
+            INSERT INTO user_acessos (user_id, tipo_acesso, data_acesso)
+            VALUES (%s, %s, %s)
             RETURNING id
-        ''', (user_id, tipo_acesso))
+        ''', (user_id, tipo_acesso, agora))
         
         result = cursor.fetchone()
         conn.commit()
