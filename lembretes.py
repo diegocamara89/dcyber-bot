@@ -368,12 +368,13 @@ async def handle_lembretes_callback(update: Update, context: ContextTypes.DEFAUL
 
 @user_approved
 async def handle_lembrete_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler para mensagens durante criação de lembretes"""
     if not context.user_data.get('criando_lembrete'):
         return
 
     estado = context.user_data.get('estado_lembrete')
     texto = update.message.text.strip()
+    timezone = pytz.timezone('America/Sao_Paulo')
+    agora = datetime.now(timezone)
 
     if estado == TITULO:
         context.user_data['titulo'] = texto
@@ -388,6 +389,7 @@ async def handle_lembrete_message(update: Update, context: ContextTypes.DEFAULT_
     elif estado == DATA:
         try:
             data = datetime.strptime(texto, "%d/%m/%Y")
+            data = timezone.localize(data)
             context.user_data['data'] = data
             context.user_data['estado_lembrete'] = HORA
             await update.message.reply_text(
@@ -404,8 +406,9 @@ async def handle_lembrete_message(update: Update, context: ContextTypes.DEFAULT_
             hora = datetime.strptime(texto, "%H:%M").time()
             data = context.user_data['data']
             data_hora = datetime.combine(data.date(), hora)
+            data_hora = timezone.localize(data_hora)
             
-            if data_hora < datetime.now():
+            if data_hora < agora:
                 await update.message.reply_text(
                     "❌ Não é possível criar lembretes para datas passadas!",
                     reply_markup=InlineKeyboardMarkup([[
