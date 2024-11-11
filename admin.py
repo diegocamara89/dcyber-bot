@@ -51,7 +51,7 @@ async def menu_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     keyboard = [
         [InlineKeyboardButton(f"✅ Aprovar Usuários ({total_pendentes})", callback_data='admin_aprovar_usuarios')],
-        [InlineKeyboardButton("👥 Gerenciar Usuários", callback_data='admin_gerenciar_usuarios')],
+        [InlineKeyboardButton("👥 Lista de Usuários", callback_data='listar_usuarios')],
         [InlineKeyboardButton("🔰 Definir DPC", callback_data='definir_dpc')],
         [InlineKeyboardButton("📨 Enviar Mensagem", callback_data='admin_enviar_mensagem')],
         [InlineKeyboardButton("🔙 Voltar", callback_data='menu_admin')]
