@@ -511,6 +511,23 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
             fim = hoje.replace(day=1) - timedelta(days=1)
             await gerar_relatorio(update, context, inicio, fim, "Mês anterior")
 
+    elif query.data == 'admin_enviar_mensagem':
+            await iniciar_envio_mensagem(update, context)
+        
+        elif query.data.startswith('msg_'):
+            await solicitar_mensagem(update, context)
+        
+        elif query.data == 'cancelar_envio':
+            context.user_data.pop('envio_mensagem', None)
+            await menu_usuarios(update, context)
+        
+        elif query.data.startswith('gerenciar_usuario_'):  # Adicionar este bloco
+            await menu_gerenciar_usuario_individual(update, context)
+        
+        elif query.data.startswith('set_nivel_'):
+            _, nivel, user_id = query.data.split('_')
+            # ... resto do código
+
     except Exception as e:
         print(f"Erro no callback administrativo: {e}")
         await query.answer("❌ Erro ao processar comando")
