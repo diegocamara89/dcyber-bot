@@ -62,23 +62,7 @@ async def menu_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text="👥 Gestão de Usuários",
         reply_markup=reply_markup
     )
-   
-    # Botões de navegação
-    keyboard.append([InlineKeyboardButton("✅ Aprovar Usuários", callback_data='admin_aprovar_usuarios')])
-    keyboard.append([InlineKeyboardButton("🔰 Definir DPC", callback_data='definir_dpc')])
-    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data='admin_usuarios')])
     
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    try:
-        await update.callback_query.edit_message_text(
-            text=texto,
-            reply_markup=reply_markup,
-            parse_mode='Markdown'
-        )
-    except Exception as e:
-        print(f"Erro ao gerenciar usuários: {e}")
-
 async def menu_gerenciar_usuario_individual(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Menu de gerenciamento de um usuário específico"""
     query = update.callback_query
@@ -371,13 +355,10 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
         if query.data == 'admin_usuarios':
             await menu_usuarios(update, context)
         
-        elif query.data == 'admin_listar_usuarios':
-            await listar_todos_usuarios(update, context)
-        
         elif query.data == 'admin_aprovar_usuarios':
             await menu_aprovar_usuarios(update, context)
-            
-        elif query.data == 'listar_usuarios':
+        
+        elif query.data == 'admin_gerenciar_usuarios':
             usuarios = listar_usuarios()
             texto = "👥 *Lista de Usuários*\n\n"
             keyboard = []
@@ -411,7 +392,7 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
                 reply_markup=reply_markup,
                 parse_mode='Markdown'
             )
-        
+            
         elif query.data.startswith('admin_aprovar_'):
             user_id = int(query.data.replace('admin_aprovar_', ''))
             if aprovar_usuario(user_id):
@@ -455,41 +436,6 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
         elif query.data == 'menu_relatorios':
             await menu_relatorios(update, context)
         
-       elif query.data == 'admin_gerenciar_usuarios':
-            usuarios = listar_usuarios()
-            texto = "👥 *Lista de Usuários*\n\n"
-            keyboard = []
-            
-            for user in usuarios:
-                user_id, nome, username, nivel, data_cadastro = user
-                if nivel != 'admin':  # Não permite gerenciar administradores
-                    nivel_emoji = {
-                        'dpc': '🔰',
-                        'user': '👤',
-                        'pendente': '⏳'
-                    }.get(nivel, '❓')
-                    
-                    texto += f"{nivel_emoji} *{nome}*\n"
-                    texto += f"├ ID: `{user_id}`\n"
-                    texto += f"├ Username: @{username if username else 'Não informado'}\n"
-                    texto += f"├ Nível: {nivel}\n\n"
-                    
-                    keyboard.append([
-                        InlineKeyboardButton(
-                            f"⚙️ Gerenciar {nome}", 
-                            callback_data=f'gerenciar_usuario_{user_id}'
-                        )
-                    ])
-            
-            keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data='admin_usuarios')])
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            await query.edit_message_text(
-                text=texto,
-                reply_markup=reply_markup,
-                parse_mode='Markdown'
-            )
-        
         elif query.data == 'admin_enviar_mensagem':
             await iniciar_envio_mensagem(update, context)
         
@@ -507,7 +453,7 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
                 await query.edit_message_text(
                     "✅ Nível alterado com sucesso!\nVoltando para a lista de usuários...",
                     reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("🔄 Atualizar Lista", callback_data='listar_usuarios')
+                        InlineKeyboardButton("🔄 Atualizar Lista", callback_data='admin_gerenciar_usuarios')
                     ]])
                 )
             else:
@@ -535,7 +481,7 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
                 await query.edit_message_text(
                     "✅ Operação realizada com sucesso!\nVoltando para a lista de usuários...",
                     reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("🔄 Atualizar Lista", callback_data='listar_usuarios')
+                        InlineKeyboardButton("🔄 Atualizar Lista", callback_data='admin_gerenciar_usuarios')
                     ]])
                 )
             else:
