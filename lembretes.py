@@ -221,7 +221,9 @@ def adicionar_lembrete_db(user_id: int, titulo: str, data: str, hora: str, desti
         
         lembrete_id = cursor.fetchone()[0]
         
-        if 'todos' in destinatarios:  # Primeiro verifica se é para todos
+        if not destinatarios:  # Se vazio, apenas o criador
+            destinatarios = [user_id]
+        elif destinatarios == ['todos']:  # Se for para todos
             cursor.execute('''
                 SELECT user_id 
                 FROM usuarios 
@@ -229,14 +231,25 @@ def adicionar_lembrete_db(user_id: int, titulo: str, data: str, hora: str, desti
                 AND nivel != 'pendente'
             ''')
             destinatarios = [row[0] for row in cursor.fetchall()]
-        elif not destinatarios:  # Se vazio, apenas o criador
-            destinatarios = [user_id]
         
+        # Os IDs já devem estar como números aqui
         for dest_id in destinatarios:
             cursor.execute('''
             INSERT INTO lembrete_destinatarios (lembrete_id, user_id, notificado)
             VALUES (%s, %s, FALSE)
-            ''', (lembrete_id, int(dest_id)))
+            ''', (lembrete_id, dest_id))
+        
+        conn.commit()
+        incrementar_contador('lembretes')
+        registrar_acao_usuario(user_id, 'novo_lembrete')
+        return lembrete_id
+    except Exception as e:
+        print(f"Erro ao adicionar lembrete: {e}")
+        conn.rollback()
+        return None
+    finally:
+        cursor.close()
+        conn.close()
         
         conn.commit()
         incrementar_contador('lembretes')
@@ -317,14 +330,12 @@ async def handle_lembretes_callback(update: Update, context: ContextTypes.DEFAUL
         context.user_data.clear()
         await menu_lembretes(update, context)
     
-    # No arquivo lembretes.py, modifique a parte do handle_lembretes_callback:
-
     elif query.data == 'lembrete_dest_eu':
-        context.user_data['destinatarios'] = [str(query.from_user.id)]  # Apenas o criador
-        await finalizar_lembrete(update, context)  # Remove o redirecionamento automático
+        context.user_data['destinatarios'] = [query.from_user.id]  # Armazena como número
+        await finalizar_lembrete(update, context)
     
     elif query.data == 'lembrete_dest_todos':
-        context.user_data['destinatarios'] = ['todos']  # Manteremos como lista
+        context.user_data['destinatarios'] = ['todos']
         await finalizar_lembrete(update, context)
     
     elif query.data == 'lembrete_dest_selecionar':
@@ -334,7 +345,7 @@ async def handle_lembretes_callback(update: Update, context: ContextTypes.DEFAUL
         await selecionar_destinatarios_callback(update, context)
     
     elif query.data.startswith('lembrete_user_'):
-        user_id = query.data.split('_')[-1]
+        user_id = int(query.data.split('_')[-1])  # Converte para número aqui
         destinatarios = context.user_data.get('destinatarios', [])
         
         if user_id in destinatarios:
@@ -347,9 +358,7 @@ async def handle_lembretes_callback(update: Update, context: ContextTypes.DEFAUL
     
     elif query.data == 'lembrete_dest_confirmar':
         if context.user_data.get('destinatarios'):
-            lembrete_id = await finalizar_lembrete(update, context)
-            if lembrete_id:
-                await menu_lembretes(update, context)
+            await finalizar_lembrete(update, context)
         else:
             await query.edit_message_text(
                 "⚠️ Selecione pelo menos um destinatário!",
