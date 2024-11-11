@@ -263,8 +263,19 @@ async def button_handler_main(update: Update, context: ContextTypes.DEFAULT_TYPE
     query = update.callback_query
     print(f"button_handler_main recebeu callback: {query.data}")
     
-    # Processar callbacks administrativos
-    if query.data.startswith(('admin_', 'gerenciar_usuario_', 'set_nivel_', 'set_status_', 'menu_admin', 'relatorio_', 'definir_dpc')):
+    # Processar callbacks administrativos e de gestão de usuários
+    admin_patterns = (
+        'admin_', 
+        'gerenciar_usuario_', 
+        'set_nivel_', 
+        'set_status_', 
+        'enviar_msg_',
+        'menu_admin', 
+        'relatorio_', 
+        'definir_dpc'
+    )
+    
+    if query.data.startswith(admin_patterns):
         print(f"Encaminhando para handle_admin_callback: {query.data}")
         await handle_admin_callback(update, context)
         return
