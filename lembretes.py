@@ -221,9 +221,7 @@ def adicionar_lembrete_db(user_id: int, titulo: str, data: str, hora: str, desti
         
         lembrete_id = cursor.fetchone()[0]
         
-        if not destinatarios:  # Se vazio, apenas o criador
-            destinatarios = [user_id]
-        elif 'todos' in destinatarios:
+        if 'todos' in destinatarios:  # Primeiro verifica se é para todos
             cursor.execute('''
                 SELECT user_id 
                 FROM usuarios 
@@ -231,17 +229,23 @@ def adicionar_lembrete_db(user_id: int, titulo: str, data: str, hora: str, desti
                 AND nivel != 'pendente'
             ''')
             destinatarios = [row[0] for row in cursor.fetchall()]
+        elif not destinatarios:  # Se vazio, apenas o criador
+            destinatarios = [user_id]
         
         for dest_id in destinatarios:
             cursor.execute('''
             INSERT INTO lembrete_destinatarios (lembrete_id, user_id, notificado)
             VALUES (%s, %s, FALSE)
-            ''', (lembrete_id, dest_id))
+            ''', (lembrete_id, int(dest_id)))
         
         conn.commit()
         incrementar_contador('lembretes')
         registrar_acao_usuario(user_id, 'novo_lembrete')
         return lembrete_id
+    except Exception as e:
+        print(f"Erro ao adicionar lembrete: {e}")
+        conn.rollback()
+        return None
     finally:
         cursor.close()
         conn.close()
@@ -320,8 +324,8 @@ async def handle_lembretes_callback(update: Update, context: ContextTypes.DEFAUL
         await finalizar_lembrete(update, context)  # Remove o redirecionamento automático
     
     elif query.data == 'lembrete_dest_todos':
-        context.user_data['destinatarios'] = ['todos']
-        await finalizar_lembrete(update, context)  # Remove o redirecionamento automático
+        context.user_data['destinatarios'] = ['todos']  # Manteremos como lista
+        await finalizar_lembrete(update, context)
     
     elif query.data == 'lembrete_dest_selecionar':
         await selecionar_usuarios(update, context)
