@@ -5,9 +5,8 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
-# Definição do timezone
+# Configuração global do timezone
 TIMEZONE = pytz.timezone('America/Sao_Paulo')
-from datetime import datetime, timedelta
 from database import (
     get_db_connection,
     get_usuarios_cadastrados,
