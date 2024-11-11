@@ -39,6 +39,45 @@ async def menu_lembretes(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.MARKDOWN
     )
 
+async def listar_lembretes(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Lista os lembretes do usuário"""
+    user_id = update.callback_query.from_user.id
+    lembretes = consultar_lembretes_db(user_id)
+    
+    if not lembretes:
+        keyboard = [[InlineKeyboardButton("🔙 Voltar", callback_data='lembretes')]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.callback_query.edit_message_text(
+            text="📝 *Meus Lembretes*\n\n"
+                 "Você não possui lembretes cadastrados.",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+
+    texto = "📋 *Meus Lembretes:*\n\n"
+    keyboard = []
+    
+    for lembrete in lembretes:
+        id_lembrete, titulo, data, hora, destinatarios = lembrete
+        texto += f"📌 *{titulo}*\n"
+        texto += f"📅 Data: {data.strftime('%d/%m/%Y')}\n"
+        texto += f"⏰ Hora: {hora}\n"
+        texto += f"👥 Para: {destinatarios}\n\n"
+        keyboard.append([InlineKeyboardButton(
+            f"❌ Apagar: {titulo}",
+            callback_data=f'lembrete_apagar_{id_lembrete}'
+        )])
+    
+    keyboard.append([InlineKeyboardButton("🔙 Voltar", callback_data='lembretes')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.callback_query.edit_message_text(
+        text=texto,
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.MARKDOWN
+    )
+
 async def criar_lembrete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Inicia o processo de criação de um novo lembrete"""
     context.user_data['criando_lembrete'] = True
