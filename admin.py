@@ -47,24 +47,6 @@ async def menu_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     keyboard = [
         [InlineKeyboardButton(f"✅ Aprovar Usuários ({total_pendentes})", callback_data='admin_aprovar_usuarios')],
-        [InlineKeyboardButton("👥 Listar Usuários", callback_data='admin_listar_usuarios')],
-        [InlineKeyboardButton("🔰 Definir DPC", callback_data='definir_dpc')],
-        [InlineKeyboardButton("🔙 Voltar", callback_data='menu_admin')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await update.callback_query.edit_message_text(
-        text="👥 Gestão de Usuários",
-        reply_markup=reply_markup
-    )
-
-async def menu_usuarios(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Menu de gerenciamento de usuários"""
-    usuarios_pendentes = listar_usuarios_pendentes()
-    total_pendentes = len(usuarios_pendentes)
-    
-    keyboard = [
-        [InlineKeyboardButton(f"✅ Aprovar Usuários ({total_pendentes})", callback_data='admin_aprovar_usuarios')],
         [InlineKeyboardButton("👥 Gerenciar Usuários", callback_data='admin_gerenciar_usuarios')],
         [InlineKeyboardButton("🔰 Definir DPC", callback_data='definir_dpc')],
         [InlineKeyboardButton("📨 Enviar Mensagem", callback_data='admin_enviar_mensagem')],
