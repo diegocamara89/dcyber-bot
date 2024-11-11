@@ -14,6 +14,7 @@ def criar_tabela_casos():
                 user_id BIGINT NOT NULL,
                 titulo TEXT NOT NULL,
                 descricao TEXT,
+                observacoes TEXT,
                 status TEXT DEFAULT 'Em andamento',
                 ativo BOOLEAN DEFAULT TRUE,
                 criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
